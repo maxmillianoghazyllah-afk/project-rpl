@@ -12,8 +12,3 @@ Beberapa fitur yang ingin dibuat:
 - Memproses beberapa file sekaligus
 - Melihat ukuran file sebelum dan sesudah dikompres
 - Memilih tingkat kualitas kompresi
-
-
-Catatan
-
-Project ini masih dibuat dan kemungkinan akan banyak berubah selama proses pengembangan.
