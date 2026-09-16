@@ -3,13 +3,7 @@ Project ini masih dalam tahap pengembangan dan dibuat sebagai latihan untuk bela
 
 Rencana file yang ingin didukung:
 
-JPG / JPEG
-PNG
-GIF
-MP4
-MP3
-WebP
-dan format lainnya
+JPG / JPEG, PNG, GIF, MP4, MP3, WebP, dan format lainnya
 
 Beberapa fitur yang ingin dibuat:
 
