@@ -1,3 +1,5 @@
+File Compressor
+
 Project untuk mengompres berbagai jenis file agar ukuran file menjadi lebih kecil.
 Project ini masih dalam tahap pengembangan dan dibuat sebagai latihan untuk belajar membuat project di GitHub.
 
