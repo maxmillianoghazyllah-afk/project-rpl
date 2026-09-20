@@ -62,6 +62,7 @@ Alur pembayaran:
 5. Penjual memeriksa pembayaran.
 6. Jika pembayaran sudah diterima, penjual mengonfirmasi pesanan.
 7. Pesanan mendapatkan atau masuk ke nomor antrean.
+
 Untuk versi awal, pembayaran tidak dilakukan secara otomatis melalui payment gateway. Konfirmasi pembayaran dilakukan oleh penjual.
 
 ## Status Pesanan
