@@ -1,53 +1,104 @@
-# File Compressor
-Project untuk mengompres berbagai jenis file agar ukuran file menjadi lebih kecil.
-Project ini masih dalam tahap pengembangan dan dibuat untuk belajar membuat project menggunakan GitHub sekaligus belajar tentang bagaimana proses kompresi file bekerja.
+# Sistem Antrean Kantin
+Project aplikasi untuk membantu mahasiswa memesan makanan di kantin tanpa harus mengantre langsung di tempat.
+Mahasiswa dapat melihat menu, melakukan pemesanan, membayar menggunakan QRIS, dan melihat nomor antrean serta status pesanannya.
+Project ini dibuat sebagai tugas dan masih dalam tahap pengembangan.
 
-## Tentang Project
-File Compressor nantinya akan menjadi sebuah aplikasi yang dapat digunakan untuk mengurangi ukuran file tanpa harus menggunakan banyak aplikasi berbeda. Pengguna dapat memasukkan file, memilih tingkat kompresi yang diinginkan, lalu mendapatkan file hasil kompresi. Project ini ditujukan untuk penggunaan sederhana seperti mengurangi ukuran foto, video, audio, GIF, dan beberapa jenis file lainnya.
+## Deskripsi Masalah
+Pada saat kantin ramai, mahasiswa harus mengantre untuk memesan makanan. Hal ini dapat membuat antrean menjadi panjang dan mahasiswa harus menunggu di depan kantin.
+Mahasiswa juga tidak mengetahui berapa banyak pesanan yang sedang diproses atau kapan pesanannya akan selesai.
+Aplikasi ini dibuat untuk membantu proses pemesanan dan antrean agar mahasiswa dapat melakukan pemesanan secara online dan memantau antreannya melalui aplikasi.
 
-## File yang ingin didukung
-Beberapa format file yang direncanakan untuk didukung:
-- JPG / JPEG
-- PNG
-- WebP
-- GIF
-- MP4
-- MP3
-- WAV
-- OGG
-- dan format lainnya
-Dukungan untuk setiap format akan ditambahkan secara bertahap selama project dikembangkan.
+## Target Pengguna
+Pengguna aplikasi terdiri dari:
 
-## Fitur yang ingin dibuat
-- Kompres file
-- Mengubah format file
-- Mengompres beberapa file sekaligus
-- Melihat ukuran file sebelum dikompres
-- Melihat ukuran file setelah dikompres
-- Melihat berapa banyak ukuran file yang berhasil dikurangi
-- Memilih tingkat kualitas kompresi
-- Memilih lokasi penyimpanan file hasil kompresi
+### Mahasiswa
+Mahasiswa dapat:
+- Melihat menu makanan dan minuman.
+- Memesan makanan secara online.
+- Melakukan pembayaran menggunakan QRIS.
+- Mendapatkan nomor antrean.
+- Melihat nomor antrean yang sedang diproses.
+- Melihat status pesanannya.
 
-## Cara Kerja
-Secara sederhana, prosesnya akan seperti ini:
-1. Pengguna memilih file.
-2. Program mendeteksi jenis file tersebut.
-3. Program menentukan metode kompresi yang sesuai.
-4. Pengguna memilih tingkat kompresi atau kualitas.
-5. File diproses.
-6. Program membuat file hasil kompresi.
-7. Ukuran file sebelum dan sesudah kompresi ditampilkan.
-Contoh:
-```text
-File asli:
-video.mp4
-Ukuran: 100 MB
+### Penjual Kantin
 
-        ↓
-    Kompresi
+Penjual dapat:
 
-File hasil:
-video_compressed.mp4
-Ukuran: 40 MB
+- Mengelola menu.
+- Melihat pesanan yang masuk.
+- Memeriksa pembayaran.
+- Mengatur antrean pesanan.
+- Mengubah status pesanan.
 
-Ukuran berkurang: 60 MB
+## Manfaat Aplikasi
+Aplikasi ini diharapkan dapat:
+- Mengurangi kebutuhan mahasiswa untuk mengantre saat memesan.
+- Membantu mahasiswa mengetahui posisi antreannya.
+- Membantu penjual mengatur pesanan yang masuk.
+- Membuat proses pemesanan menjadi lebih teratur.
+- Memberikan pilihan pembayaran menggunakan QRIS.
+
+## Fitur Inti
+Fitur yang ingin dibuat:
+- Melihat daftar menu.
+- Memesan makanan dan minuman.
+- Melihat detail pesanan.
+- Pembayaran menggunakan QRIS.
+- Konfirmasi pembayaran.
+- Mendapatkan nomor antrean.
+- Melihat status dan nomor antrean.
+- Penjual dapat melihat pesanan masuk.
+- Penjual dapat mengonfirmasi pembayaran.
+- Penjual dapat mengubah status pesanan.
+- Riwayat pesanan.
+
+## Cara Pembayaran
+Pembayaran menggunakan QRIS milik kantin.
+Alur pembayaran:
+1. Mahasiswa memilih makanan dan melakukan checkout.
+2. Aplikasi menampilkan QRIS kantin.
+3. Mahasiswa melakukan pembayaran menggunakan aplikasi pembayaran yang mendukung QRIS.
+4. Mahasiswa menekan tombol konfirmasi pembayaran.
+5. Penjual memeriksa pembayaran.
+6. Jika pembayaran sudah diterima, penjual mengonfirmasi pesanan.
+7. Pesanan mendapatkan atau masuk ke nomor antrean.
+Untuk versi awal, pembayaran tidak dilakukan secara otomatis melalui payment gateway. Konfirmasi pembayaran dilakukan oleh penjual.
+
+## Status Pesanan
+Pesanan dapat memiliki beberapa status:
+- Menunggu Pembayaran
+- Menunggu Konfirmasi
+- Masuk Antrean
+- Sedang Diproses
+- Siap Diambil
+- Selesai
+- Dibatalkan
+
+## Fitur yang Tidak Dikerjakan
+Untuk menjaga project tetap dapat diselesaikan dalam waktu yang tersedia, beberapa fitur tidak dikerjakan:
+- Pengiriman makanan.
+- Sistem delivery.
+- Integrasi dengan banyak kantin sekaligus.
+- Sistem rating dan review.
+- Sistem voucher atau promo.
+- Notifikasi melalui WhatsApp.
+- Pembayaran otomatis melalui rekening bank.
+- Sistem rekomendasi makanan.
+- Aplikasi mobile khusus Android/iOS.
+
+## Kriteria Aplikasi Dinyatakan Berhasil
+Aplikasi dinyatakan berhasil apabila:
+- Mahasiswa dapat melihat menu.
+- Mahasiswa dapat membuat pesanan.
+- Mahasiswa dapat melihat total pembayaran.
+- Mahasiswa dapat menggunakan QRIS sebagai metode pembayaran.
+- Penjual dapat melihat pesanan yang masuk.
+- Penjual dapat melakukan konfirmasi pembayaran.
+- Mahasiswa mendapatkan nomor antrean setelah pembayaran dikonfirmasi.
+- Mahasiswa dapat melihat perkembangan antrean.
+- Penjual dapat mengubah status pesanan.
+- Pesanan dapat diselesaikan sampai mahasiswa mengambil pesanannya.
+
+## Status Project
+Project masih dalam tahap pengembangan.
+Fitur dan struktur aplikasi masih dapat berubah selama proses pengerjaan.
