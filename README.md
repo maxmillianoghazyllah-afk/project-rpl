@@ -101,5 +101,50 @@ Aplikasi dinyatakan berhasil apabila:
 - Pesanan dapat diselesaikan sampai mahasiswa mengambil pesanannya.
 
 ## Status Project
-Project masih dalam tahap pengembangan.
-Fitur dan struktur aplikasi masih dapat berubah selama proses pengerjaan.
+Project telah selesai diimplementasikan sesuai Dokumen Arsitektur P3.
+
+## Panduan Menjalankan Aplikasi (Lokal)
+
+### 1. Prasyarat
+- **Node.js**: v18+ atau v20+ / v24+
+- **MySQL Database**: Aktif di port 3306 (misal menggunakan XAMPP)
+
+### 2. Instalasi Dependensi
+Jalankan perintah berikut di root folder proyek:
+```bash
+# Instal dependensi backend
+cd backend
+npm install
+
+# Instal dependensi frontend
+cd ../frontend
+npm install
+```
+
+### 3. Konfigurasi Database & Data Awal (Seeding)
+Salin `.env.example` menjadi `.env` di dalam folder `backend/`:
+```bash
+cd backend
+npx prisma db push
+npx ts-node prisma/seed.ts
+```
+
+### 4. Menjalankan Server
+Buka 2 terminal terpisah:
+
+- **Terminal 1 (Backend API)**:
+  ```bash
+  cd backend
+  npm run dev
+  ```
+  API akan aktif di `http://localhost:5000`
+
+- **Terminal 2 (Frontend Web UI)**:
+  ```bash
+  cd frontend
+  npm run dev
+  ```
+  Web UI akan aktif di `http://localhost:5173`
+
+Buka browser Anda ke `http://localhost:5173` untuk mengakses aplikasi.
+
