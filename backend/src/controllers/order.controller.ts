@@ -1,13 +1,7 @@
 import { Response } from 'express';
 import { prisma } from '../lib/prisma';
 import { AuthenticatedRequest } from '../middleware/auth';
-
-interface PreparedItem {
-  menuId: number;
-  quantity: number;
-  priceAtOrder: number;
-  subtotal: number;
-}
+import { processOrderItems, generateOrderNumber, MenuItemInput } from '../services/order.service';
 
 export const createOrder = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -34,52 +28,45 @@ export const createOrder = async (req: AuthenticatedRequest, res: Response) => {
       userId = user.id;
     }
 
-    let totalAmount = 0;
-    const preparedItems: PreparedItem[] = [];
-
+    // Ambil data menu resmi dari database untuk mencegah manipulasi harga dari client
+    const rawItems: MenuItemInput[] = [];
     for (const item of items) {
       const menu = await prisma.menu.findUnique({ where: { id: item.menuId } });
       if (!menu) {
         return res.status(404).json({ message: `Menu dengan ID ${item.menuId} tidak ditemukan` });
       }
-      if (!menu.isAvailable) {
-        return res.status(400).json({ message: `Menu "${menu.name}" sedang tidak tersedia` });
-      }
-
-      const qty = parseInt(item.quantity, 10);
-      if (isNaN(qty) || qty <= 0) {
-        return res.status(400).json({ message: `Jumlah pesanan untuk ${menu.name} tidak valid` });
-      }
-
-      const subtotal = menu.price * qty;
-      totalAmount += subtotal;
-
-      preparedItems.push({
+      rawItems.push({
         menuId: menu.id,
-        quantity: qty,
-        priceAtOrder: menu.price,
-        subtotal,
+        name: menu.name,
+        price: menu.price,
+        quantity: parseInt(item.quantity, 10),
+        isAvailable: menu.isAvailable,
       });
     }
 
-    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-    const orderNumber = `ORD-${dateStr}-${randomSuffix}`;
+    // Jalankan kalkulasi dan validasi aturan bisnis melalui Service Layer
+    const calculation = processOrderItems(rawItems);
+    const orderNumber = generateOrderNumber();
 
     const order = await prisma.$transaction(async (tx) => {
       const newOrder = await tx.order.create({
         data: {
           userId,
           orderNumber,
-          totalAmount,
+          totalAmount: calculation.totalAmount,
           status: 'WAITING_PAYMENT',
           items: {
-            create: preparedItems,
+            create: calculation.items.map((i) => ({
+              menuId: i.menuId,
+              quantity: i.quantity,
+              priceAtOrder: i.priceAtOrder,
+              subtotal: i.subtotal,
+            })),
           },
           payment: {
             create: {
               method: 'QRIS',
-              amount: totalAmount,
+              amount: calculation.totalAmount,
               status: 'PENDING',
             },
           },
@@ -99,7 +86,7 @@ export const createOrder = async (req: AuthenticatedRequest, res: Response) => {
       order,
     });
   } catch (error: any) {
-    return res.status(500).json({ message: 'Gagal membuat pesanan', error: error.message });
+    return res.status(400).json({ message: error.message || 'Gagal membuat pesanan' });
   }
 };
 

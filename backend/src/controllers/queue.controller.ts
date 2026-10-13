@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma';
 import { AuthenticatedRequest } from '../middleware/auth';
+import { isValidQueueTransition, mapQueueStatusToOrderStatus, QueueStatus } from '../services/queue.service';
 
 export const getQueue = async (req: Request, res: Response) => {
   try {
@@ -39,10 +40,22 @@ export const updateQueueStatus = async (req: AuthenticatedRequest, res: Response
     }
 
     const { status } = req.body;
-    const validStatuses = ['WAITING', 'IN_PROGRESS', 'READY', 'COMPLETED'];
+    const validStatuses: QueueStatus[] = ['WAITING', 'IN_PROGRESS', 'READY', 'COMPLETED'];
 
     if (!status || !validStatuses.includes(status)) {
       return res.status(400).json({ message: `Status antrean tidak valid. Pilihan: ${validStatuses.join(', ')}` });
+    }
+
+    const currentQueue = await prisma.queue.findUnique({ where: { id } });
+    if (!currentQueue) {
+      return res.status(404).json({ message: 'Antrean tidak ditemukan' });
+    }
+
+    // Validasi alur transisi menggunakan Queue Service
+    if (!isValidQueueTransition(currentQueue.status as QueueStatus, status as QueueStatus)) {
+      return res.status(400).json({
+        message: `Transisi status antrean dari "${currentQueue.status}" ke "${status}" tidak diizinkan`,
+      });
     }
 
     const updatedQueue = await prisma.$transaction(async (tx) => {
@@ -51,17 +64,11 @@ export const updateQueueStatus = async (req: AuthenticatedRequest, res: Response
         data: { status },
       });
 
-      let orderStatus: string | null = null;
-      if (status === 'IN_PROGRESS') orderStatus = 'PREPARING';
-      else if (status === 'READY') orderStatus = 'READY';
-      else if (status === 'COMPLETED') orderStatus = 'COMPLETED';
-
-      if (orderStatus) {
-        await tx.order.update({
-          where: { id: queue.orderId },
-          data: { status: orderStatus },
-        });
-      }
+      const orderStatus = mapQueueStatusToOrderStatus(status as QueueStatus);
+      await tx.order.update({
+        where: { id: queue.orderId },
+        data: { status: orderStatus },
+      });
 
       return queue;
     });

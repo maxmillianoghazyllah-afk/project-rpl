@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { prisma } from '../lib/prisma';
 import { AuthenticatedRequest } from '../middleware/auth';
+import { formatQueueNumber, isValidPaymentTransition, PaymentStatus } from '../services/queue.service';
 
 export const confirmPayment = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -54,6 +55,7 @@ export const decidePayment = async (req: AuthenticatedRequest, res: Response) =>
       return res.status(400).json({ message: 'Aksi harus berupa APPROVE atau REJECT' });
     }
 
+    const targetPaymentStatus: PaymentStatus = action === 'APPROVE' ? 'PAID' : 'REJECTED';
     const sellerId = req.user?.id || 2;
 
     const result = await prisma.$transaction(async (tx) => {
@@ -64,6 +66,16 @@ export const decidePayment = async (req: AuthenticatedRequest, res: Response) =>
 
       if (!order) {
         throw new Error('Pesanan tidak ditemukan');
+      }
+
+      if (!order.payment) {
+        throw new Error('Data pembayaran untuk pesanan ini tidak ditemukan');
+      }
+
+      // Validasi transisi status pembayaran menggunakan Queue Service
+      const currentStatus = order.payment.status as PaymentStatus;
+      if (!isValidPaymentTransition(currentStatus, targetPaymentStatus)) {
+        throw new Error(`Tidak dapat mengubah status pembayaran dari ${currentStatus} ke ${targetPaymentStatus}`);
       }
 
       if (action === 'APPROVE') {
@@ -83,8 +95,8 @@ export const decidePayment = async (req: AuthenticatedRequest, res: Response) =>
         let queue = order.queue;
         if (!queue) {
           const totalQueuesToday = await tx.queue.count();
-          const nextNumber = totalQueuesToday + 1;
-          const queueNumber = `A-${String(nextNumber).padStart(3, '0')}`;
+          const nextSequence = totalQueuesToday + 1;
+          const queueNumber = formatQueueNumber(nextSequence);
 
           queue = await tx.queue.create({
             data: {
@@ -122,6 +134,6 @@ export const decidePayment = async (req: AuthenticatedRequest, res: Response) =>
       data: result,
     });
   } catch (error: any) {
-    return res.status(500).json({ message: 'Gagal memproses keputusan pembayaran', error: error.message });
+    return res.status(400).json({ message: error.message || 'Gagal memproses keputusan pembayaran' });
   }
 };
