@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../lib/prisma';
 import { AuthenticatedRequest } from '../middleware/auth';
+import { isValidEmailFormat, isValidPassword, determineUserRole } from '../services/auth.service';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'kantin-secret-token-key-2026';
 
@@ -10,22 +11,31 @@ export const register = async (req: Request, res: Response) => {
   try {
     const { name, email, password, role } = req.body;
 
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: 'Nama, email, dan password wajib diisi' });
+    if (!name || name.trim().length === 0) {
+      return res.status(400).json({ message: 'Nama lengkap wajib diisi' });
     }
 
-    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (!isValidEmailFormat(email)) {
+      return res.status(400).json({ message: 'Format alamat email tidak valid' });
+    }
+
+    if (!isValidPassword(password)) {
+      return res.status(400).json({ message: 'Password minimal terdiri dari 6 karakter' });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const existingUser = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (existingUser) {
       return res.status(400).json({ message: 'Email sudah terdaftar' });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const assignedRole = role === 'SELLER' ? 'SELLER' : 'CUSTOMER';
+    const assignedRole = determineUserRole(role);
 
     const user = await prisma.user.create({
       data: {
-        name,
-        email,
+        name: name.trim(),
+        email: normalizedEmail,
         passwordHash,
         role: assignedRole,
       },
@@ -60,7 +70,8 @@ export const login = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Email dan password wajib diisi' });
     }
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (!user) {
       return res.status(401).json({ message: 'Email atau password salah' });
     }
