@@ -1,7 +1,8 @@
 import { Response } from 'express';
 import { prisma } from '../lib/prisma';
 import { AuthenticatedRequest } from '../middleware/auth';
-import { formatQueueNumber, isValidPaymentTransition, PaymentStatus } from '../services/queue.service';
+import { canTransitionPaymentStatus, PaymentStatus } from '../services/payment.service';
+import { formatQueueNumber } from '../services/queue.service';
 
 export const confirmPayment = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -72,9 +73,9 @@ export const decidePayment = async (req: AuthenticatedRequest, res: Response) =>
         throw new Error('Data pembayaran untuk pesanan ini tidak ditemukan');
       }
 
-      // Validasi transisi status pembayaran menggunakan Queue Service
+      // Validasi transisi status pembayaran menggunakan Payment Service
       const currentStatus = order.payment.status as PaymentStatus;
-      if (!isValidPaymentTransition(currentStatus, targetPaymentStatus)) {
+      if (!canTransitionPaymentStatus(currentStatus, targetPaymentStatus)) {
         throw new Error(`Tidak dapat mengubah status pembayaran dari ${currentStatus} ke ${targetPaymentStatus}`);
       }
 
