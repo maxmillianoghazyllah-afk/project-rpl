@@ -12,12 +12,21 @@ import { SellerMenuPage } from './pages/seller/SellerMenuPage';
 import { SellerQueueDisplayPage } from './pages/seller/SellerQueueDisplayPage';
 import { SellerAuthModal, AuthModalMode } from './components/SellerAuthModal';
 import { Order, UserRole } from './types';
-import { Lock, ShieldAlert } from 'lucide-react';
+import { Lock } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [activeRole, setActiveRole] = useState<UserRole>('CUSTOMER');
   const [currentTab, setCurrentTab] = useState<string>('menu');
-  const [activeOrder, setActiveOrder] = useState<Order | null>(null);
+
+  // Simpan activeOrder di state & localStorage agar tidak hilang saat refresh atau pindah tab
+  const [activeOrder, setActiveOrder] = useState<Order | null>(() => {
+    try {
+      const saved = localStorage.getItem('kantin_active_order');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
 
   // Modal Auth State
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -120,7 +129,7 @@ export const App: React.FC = () => {
           window.history.pushState({}, '', targetPath);
         }
       } else {
-        // Customer tab
+        // Customer tab (cukup klik tab mahasiswa langsung bisa beralih)
         setActiveRole('CUSTOMER');
         setCurrentTab(targetTab);
         localStorage.setItem('kantin_active_role', 'CUSTOMER');
@@ -149,7 +158,6 @@ export const App: React.FC = () => {
           setPendingTab(tab);
           setAuthModalMode(hasSellerPassword() ? 'LOGIN' : 'CREATE');
           setIsAuthModalOpen(true);
-          // Keep role customer for safe background display
           setActiveRole('CUSTOMER');
           setCurrentTab('menu');
         }
@@ -180,7 +188,6 @@ export const App: React.FC = () => {
   const handleAuthClose = () => {
     setIsAuthModalOpen(false);
     setPendingTab(null);
-    // If currently on seller tab without valid session, fallback to menu
     if (activeRole === 'SELLER' && !isSellerUnlocked()) {
       setActiveRole('CUSTOMER');
       setCurrentTab('menu');
@@ -192,14 +199,6 @@ export const App: React.FC = () => {
   const handleOpenChangePassword = () => {
     setAuthModalMode('CHANGE_PASSWORD');
     setIsAuthModalOpen(true);
-  };
-
-  const handleSellerLogout = () => {
-    sessionStorage.removeItem('kantin_seller_session');
-    setActiveRole('CUSTOMER');
-    setCurrentTab('menu');
-    localStorage.setItem('kantin_active_role', 'CUSTOMER');
-    window.history.pushState({}, '', '/');
   };
 
   const handleRequestSellerLogin = (targetTab: string = 'seller-orders') => {
@@ -217,23 +216,29 @@ export const App: React.FC = () => {
 
   const handleOrderCreated = (order: Order) => {
     setActiveOrder(order);
+    localStorage.setItem('kantin_active_order', JSON.stringify(order));
     navigateToTab('payment');
   };
 
   const handlePaymentConfirmed = (order: Order) => {
     setActiveOrder(order);
+    localStorage.setItem('kantin_active_order', JSON.stringify(order));
+    // Kosongkan keranjang saat pembayaran sudah berhasil dikonfirmasi
+    localStorage.removeItem('kantin_cart');
+    window.dispatchEvent(new Event('storage'));
     navigateToTab('queue');
   };
 
   const handleSelectHistoryOrder = (order: Order) => {
     setActiveOrder(order);
+    localStorage.setItem('kantin_active_order', JSON.stringify(order));
     navigateToTab('queue');
   };
 
   return (
     <CartProvider>
       <div className="min-h-screen flex flex-col bg-gray-50 text-gray-900">
-        {/* Navbar only shown when NOT on fullscreen display */}
+        {/* Navbar ditampikan kecuali di layar display fullscreen */}
         {currentTab !== 'seller-display' && (
           <Navbar
             currentTab={currentTab}
@@ -241,7 +246,6 @@ export const App: React.FC = () => {
             activeRole={activeRole}
             onRequestSellerLogin={handleRequestSellerLogin}
             onOpenChangePassword={handleOpenChangePassword}
-            onSellerLogout={handleSellerLogout}
           />
         )}
 
@@ -257,12 +261,26 @@ export const App: React.FC = () => {
                   onOrderCreated={handleOrderCreated}
                 />
               )}
-              {currentTab === 'payment' && activeOrder && (
-                <PaymentInstructionPage
-                  order={activeOrder}
-                  onPaymentConfirmed={handlePaymentConfirmed}
-                  onNavigateToQueue={() => navigateToTab('queue')}
-                />
+              {currentTab === 'payment' && (
+                activeOrder ? (
+                  <PaymentInstructionPage
+                    order={activeOrder}
+                    onPaymentConfirmed={handlePaymentConfirmed}
+                    onNavigateToQueue={() => navigateToTab('queue')}
+                  />
+                ) : (
+                  <div className="max-w-md mx-auto my-16 p-8 bg-white rounded-3xl shadow-md border border-gray-100 text-center">
+                    <p className="text-gray-500 text-sm mb-4">
+                      Belum ada pesanan aktif yang menunggu pembayaran.
+                    </p>
+                    <button
+                      onClick={() => navigateToTab('menu')}
+                      className="px-6 py-2.5 bg-brand-600 text-white font-bold rounded-xl text-xs"
+                    >
+                      Pilih Menu Kantin
+                    </button>
+                  </div>
+                )
               )}
               {currentTab === 'queue' && (
                 <QueueStatusPage
@@ -279,7 +297,6 @@ export const App: React.FC = () => {
             </>
           ) : (
             <>
-              {/* If user somehow is on SELLER role without unlock, show lock banner */}
               {!isSellerUnlocked() ? (
                 <div className="max-w-md mx-auto my-16 p-8 bg-white rounded-3xl shadow-xl border border-gray-100 text-center">
                   <div className="w-16 h-16 mx-auto mb-4 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center">

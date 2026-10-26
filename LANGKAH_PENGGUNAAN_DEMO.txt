@@ -4,7 +4,7 @@
 ================================================================================
 
 File ini dirancang khusus sebagai panduan langkah demi langkah saat Anda 
-merekam layar (screen record) video demonstrasi tugas RPL.
+merekam layar (screen record) video demonstrasi tugas RPL (P7 Menuntaskan Seluruh MVP).
 
 --------------------------------------------------------------------------------
 A. PERSIAPAN SEBELUM RECORDING (CHECKLIST 1 MENIT)
@@ -30,11 +30,11 @@ B. LANGKAH-LANGKAH REKAMAN & CONTOH NARASI (ACTION & SPEECH)
 - Aksi: Buka TAB 1 (Halaman Menu Mahasiswa).
 - Narasi yang bisa diucapkan:
   "Halo, perkenalkan saya [Nama Anda]. Pada kesempatan kali ini saya akan
-   mendemonstrasikan aplikasi Sistem Antrean Kantin (KantinQueue) yang telah
-   kami kembangkan untuk memenuhi tugas MVP Rekayasa Perangkat Lunak.
+   mendemonstrasikan aplikasi Sistem Antrean Kantin (KantinQueue) versi final 
+   untuk memenuhi tugas Rekayasa Perangkat Lunak.
    Aplikasi ini memiliki 3 area utama:
    1. Sisi Mahasiswa (Pemesanan menu & pembayaran QRIS),
-   2. Sisi Penjual (Kelola pesanan, verifikasi bayar, masak, & kelola menu),
+   2. Sisi Penjual (Pengaturan QRIS toko, verifikasi bayar, masak, & kelola menu),
    3. Layar Display TV Kantin (Papan monitor antrean & info ketersediaan menu)."
 
 
@@ -49,25 +49,26 @@ B. LANGKAH-LANGKAH REKAMAN & CONTOH NARASI (ACTION & SPEECH)
   7. Klik tab "Keranjang" di navbar atas (terlihat badge angka 2).
   8. Di halaman Keranjang, coba klik tombol "+" pada Es Teh Manis jadi 2 porsi.
   9. Tunjukkan kalkulasi Subtotal dan Total Pembayaran terhitung otomatis secara presisi.
+  10. Tunjukkan bahwa pilihan menu tetap tersimpan aman di keranjang meskipun berpindah tab.
 - Narasi yang bisa diucapkan:
   "Pertama, di sisi mahasiswa, pengguna dapat melihat daftar menu yang tersedia 
    beserta harga dan kategorinya. Kita bisa menyaring menu berdasarkan kategori 
    atau mencarinya lewat kolom pencarian. Di sini saya memilih 1 Nasi Goreng dan 
-   2 Es Teh Manis. Di halaman keranjang, total harga terkalkulasi otomatis secara 
-   real-time."
+   2 Es Teh Manis. Pilihan menu mahasiswa tersimpan stabil di dalam keranjang 
+   dan total harga terkalkulasi otomatis secara real-time."
 
 
 [BAGIAN 3: CHECKOUT & PEMBAYARAN QRIS (1:15 - 2:00)]
 - Aksi:
   1. Klik tombol "Lanjut Bayar QRIS".
-  2. Tunjukkan tampilan instruksi pembayaran: Muncul QR Code QRIS, nomor pesanan 
-     (contoh: ORD-20261020-xxxx), dan total tagihan yang sesuai.
+  2. Tunjukkan tampilan instruksi pembayaran: Muncul QR Code QRIS (foto QR resmi dari penjual 
+     tanpa NMID), nomor pesanan (contoh: ORD-20261020-xxxx), dan total tagihan yang sesuai.
   3. Di kolom bukti bayar / catatan (opsional), Anda bisa ketik: "Sudah bayar via BCA".
   4. Klik tombol hijau "Saya Sudah Bayar (Konfirmasi)".
   5. Klik tombol biru "Pantau Status Antrean".
   6. Tunjukkan bahwa status saat ini adalah: "Menunggu Verifikasi Pembayaran dari Penjual".
 - Narasi yang bisa diucapkan:
-  "Selanjutnya mahasiswa melakukan checkout. Sistem menerbitkan instruksi QRIS 
+  "Selanjutnya mahasiswa melakukan checkout. Sistem menerbitkan instruksi pembayaran QRIS 
    dengan total pembayaran yang sesuai. Setelah mentransfer, mahasiswa mengklik 
    konfirmasi sudah bayar. Status pesanan saat ini berada dalam tahap menunggu 
    verifikasi dari penjual kantin."
@@ -89,20 +90,23 @@ B. LANGKAH-LANGKAH REKAMAN & CONTOH NARASI (ACTION & SPEECH)
    menyediakan opsi lupa password demi keamanan kasir kantin."
 
 
-[BAGIAN 5: PENJUAL VERIFIKASI BAYAR & TERBIT NOMOR ANTREAN (2:40 - 3:20)]
+[BAGIAN 5: PENJUAL UNGGAH QR CODE & VERIFIKASI BAYAR (2:40 - 3:25)]
 - Aksi:
-  1. Di tab "Pesanan Masuk", tunjukkan pesanan mahasiswa tadi.
-  2. Tunjukkan rincian item pesanannya.
-  3. Klik tombol hijau "Setujui Pembayaran".
-  4. Tunjukkan bahwa sistem langsung menerbitkan NOMOR ANTREAN resmi (misal: A-001) 
+  1. Tunjukkan kartu "QR Code Pembayaran Kantin (QRIS)" di bagian atas dashboard penjual.
+     Sebutkan bahwa penjual bisa mengunggah foto QR Code tokonya sendiri dalam format .jpg atau .png.
+  2. Di tab "Pesanan Masuk", tunjukkan pesanan mahasiswa tadi.
+  3. Tunjukkan rincian item pesanannya.
+  4. Klik tombol hijau "Setujui Pembayaran".
+  5. Tunjukkan bahwa sistem langsung menerbitkan NOMOR ANTREAN resmi (misal: A-001) 
      dan status pesanan otomatis berganti menjadi "Dikonfirmasi / Menunggu Dimasak".
 - Narasi yang bisa diucapkan:
-  "Setelah masuk ke dashboard penjual, penjual dapat melihat pesanan masuk. 
-   Saat penjual mengklik 'Setujui Pembayaran', sistem secara otomatis menerbitkan 
-   nomor antrean sekuensial unik, yaitu nomor A-001."
+  "Di dashboard penjual, terdapat fitur bagi penjual untuk mengunggah foto QR Code tokonya 
+   sendiri dalam format JPG atau PNG yang langsung digunakan mahasiswa saat checkout. 
+   Saat penjual memeriksa pesanan dan mengklik 'Setujui Pembayaran', sistem secara otomatis 
+   menerbitkan nomor antrean sekuensial unik, yaitu nomor A-001."
 
 
-[BAGIAN 6: PROSES MASAK & LAYAR DISPLAY TV (ANTREAN & MENU) (3:20 - 4:10)]
+[BAGIAN 6: PROSES MASAK & LAYAR DISPLAY TV (ANTREAN & MENU) (3:25 - 4:15)]
 - Aksi:
   1. Klik tombol "Mulai Siapkan / Masak Pesanan" (status berubah jadi PREPARING).
   2. Buka tab "Layar Display Monitor" (atau http://localhost:5173/seller/display).
@@ -120,17 +124,15 @@ B. LANGKAH-LANGKAH REKAMAN & CONTOH NARASI (ACTION & SPEECH)
    dari 'Sedang Disiapkan' ke 'Silakan Ambil' saat makanan selesai dimasak."
 
 
-[BAGIAN 7: SELESAI, GANTI PASSWORD, & KUNCI SESI (4:10 - 4:40)]
+[BAGIAN 7: SELESAI, GANTI PASSWORD, & KEMBALI KE MAHASISWA (4:15 - 4:40)]
 - Aksi:
   1. Di sisi Penjual, klik "Pesanan Selesai Diambil".
-  2. Tunjukkan tombol "Ganti Password" di navbar penjual:
-     - Tunjukkan pop-up untuk memasukkan password lama dan password baru.
-  3. Klik tombol "Kunci / Keluar" di navbar penjual:
-     - Sistem otomatis mengunci sesi penjual dan mengarahkan kembali ke mode Mahasiswa.
+  2. Tunjukkan tombol "Ganti Password" di navbar penjual untuk memperbarui kata sandi.
+  3. Klik tombol "Mahasiswa" di pojok kanan atas untuk kembali ke mode pembeli dengan satu klik.
 - Narasi yang bisa diucapkan:
   "Setelah pesanan diserahkan, penjual menandai selesai. Penjual juga memiliki opsi 
-   untuk mengganti password kapan saja, serta tombol 'Kunci / Keluar' untuk mengunci 
-   kembali akses saat meninggalkan konter."
+   untuk mengganti password kapan saja, dan cukup mengklik tombol Mahasiswa di header 
+   untuk kembali ke mode pembeli dengan cepat."
 
 
 [BAGIAN 8: BUKTI UNIT TEST & PENUTUP (4:40 - 5:00)]

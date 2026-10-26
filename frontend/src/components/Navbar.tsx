@@ -9,7 +9,6 @@ import {
   ShieldCheck,
   User,
   KeyRound,
-  LogOut,
   Lock,
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
@@ -21,7 +20,6 @@ interface NavbarProps {
   activeRole: UserRole;
   onRequestSellerLogin: (targetTab?: string) => void;
   onOpenChangePassword: () => void;
-  onSellerLogout: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -30,7 +28,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   activeRole,
   onRequestSellerLogin,
   onOpenChangePassword,
-  onSellerLogout,
 }) => {
   const { totalItems } = useCart();
 
@@ -42,11 +39,8 @@ export const Navbar: React.FC<NavbarProps> = ({
         onRequestSellerLogin('seller-orders');
       }
     } else {
-      if (activeRole === 'SELLER') {
-        onSellerLogout();
-      } else {
-        onNavigate('menu');
-      }
+      // Beralih ke Mahasiswa cukup dengan mengklik tab Mahasiswa
+      onNavigate('menu');
     }
   };
 
@@ -167,29 +161,21 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Right Action Bar */}
           <div className="flex items-center gap-2.5">
-            {/* Seller Action Controls (Ganti Password & Keluar) */}
+            {/* Seller Action Controls (Ganti Password) */}
             {activeRole === 'SELLER' && (
               <div className="flex items-center gap-1.5 mr-1 border-r border-gray-200 pr-2.5">
                 <button
                   onClick={onOpenChangePassword}
                   title="Ganti Password Penjual"
-                  className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 flex items-center gap-1.5 transition border border-gray-200"
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 flex items-center gap-1.5 transition border border-gray-200 shadow-sm"
                 >
                   <KeyRound className="w-3.5 h-3.5 text-amber-600" />
-                  <span className="hidden sm:inline">Ganti Password</span>
-                </button>
-                <button
-                  onClick={onSellerLogout}
-                  title="Kunci Sesi & Keluar ke Mode Mahasiswa"
-                  className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 flex items-center gap-1.5 transition border border-rose-200"
-                >
-                  <LogOut className="w-3.5 h-3.5 text-rose-600" />
-                  <span className="hidden sm:inline">Kunci / Keluar</span>
+                  <span>Ganti Password</span>
                 </button>
               </div>
             )}
 
-            {/* Role Switcher Pill */}
+            {/* Role Switcher Pill (Bisa langsung klik Mahasiswa untuk kembali) */}
             <div className="bg-gray-100 p-1 rounded-xl flex items-center border border-gray-200 text-xs font-semibold">
               <button
                 onClick={() => handleRoleClick('CUSTOMER')}
@@ -228,28 +214,36 @@ export const Navbar: React.FC<NavbarProps> = ({
           <>
             <button
               onClick={() => onNavigate('menu')}
-              className={`p-2 flex flex-col items-center ${currentTab === 'menu' ? 'text-brand-600' : 'text-gray-500'}`}
+              className={`p-2 flex flex-col items-center ${
+                currentTab === 'menu' ? 'text-brand-600 font-bold' : 'text-gray-500'
+              }`}
             >
               <UtensilsCrossed className="w-4 h-4 mb-0.5" />
               Menu
             </button>
             <button
               onClick={() => onNavigate('cart')}
-              className={`p-2 flex flex-col items-center relative ${currentTab === 'cart' ? 'text-brand-600' : 'text-gray-500'}`}
+              className={`p-2 flex flex-col items-center relative ${
+                currentTab === 'cart' ? 'text-brand-600 font-bold' : 'text-gray-500'
+              }`}
             >
               <ShoppingBag className="w-4 h-4 mb-0.5" />
               Keranjang {totalItems > 0 && `(${totalItems})`}
             </button>
             <button
               onClick={() => onNavigate('queue')}
-              className={`p-2 flex flex-col items-center ${currentTab === 'queue' ? 'text-brand-600' : 'text-gray-500'}`}
+              className={`p-2 flex flex-col items-center ${
+                currentTab === 'queue' ? 'text-brand-600 font-bold' : 'text-gray-500'
+              }`}
             >
               <Clock className="w-4 h-4 mb-0.5" />
               Antrean
             </button>
             <button
               onClick={() => onNavigate('history')}
-              className={`p-2 flex flex-col items-center ${currentTab === 'history' ? 'text-brand-600' : 'text-gray-500'}`}
+              className={`p-2 flex flex-col items-center ${
+                currentTab === 'history' ? 'text-brand-600 font-bold' : 'text-gray-500'
+              }`}
             >
               <History className="w-4 h-4 mb-0.5" />
               Riwayat
@@ -259,21 +253,27 @@ export const Navbar: React.FC<NavbarProps> = ({
           <>
             <button
               onClick={() => onNavigate('seller-orders')}
-              className={`p-2 flex flex-col items-center ${currentTab === 'seller-orders' ? 'text-brand-600' : 'text-gray-500'}`}
+              className={`p-2 flex flex-col items-center ${
+                currentTab === 'seller-orders' ? 'text-brand-600 font-bold' : 'text-gray-500'
+              }`}
             >
               <Store className="w-4 h-4 mb-0.5" />
               Pesanan
             </button>
             <button
               onClick={() => onNavigate('seller-menus')}
-              className={`p-2 flex flex-col items-center ${currentTab === 'seller-menus' ? 'text-brand-600' : 'text-gray-500'}`}
+              className={`p-2 flex flex-col items-center ${
+                currentTab === 'seller-menus' ? 'text-brand-600 font-bold' : 'text-gray-500'
+              }`}
             >
               <UtensilsCrossed className="w-4 h-4 mb-0.5" />
               Menu
             </button>
             <button
               onClick={() => onNavigate('seller-display')}
-              className={`p-2 flex flex-col items-center ${currentTab === 'seller-display' ? 'text-brand-600' : 'text-gray-500'}`}
+              className={`p-2 flex flex-col items-center ${
+                currentTab === 'seller-display' ? 'text-brand-600 font-bold' : 'text-gray-500'
+              }`}
             >
               <Monitor className="w-4 h-4 mb-0.5" />
               Display

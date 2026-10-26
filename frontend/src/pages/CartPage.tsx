@@ -22,7 +22,7 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigateToMenu, onOrderCre
       setError(null);
       const payload = items.map((i) => ({ menuId: i.menu.id, quantity: i.quantity }));
       const order = await api.createOrder(payload, customerName);
-      clearCart();
+      // Simpan order aktif dan arahkan ke pembayaran (cart disimpan sampai konfirmasi bayar)
       onOrderCreated(order);
     } catch (err: any) {
       setError(err.message || 'Gagal membuat pesanan');
@@ -56,7 +56,9 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigateToMenu, onOrderCre
       <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
         <div>
           <h1 className="text-2xl font-black text-gray-900">Keranjang Pesanan</h1>
-          <p className="text-xs text-gray-500 mt-0.5">Periksa kembali item pesananmu sebelum melanjutkan ke pembayaran.</p>
+          <p className="text-xs text-gray-500 mt-0.5">
+            Periksa kembali item pesananmu sebelum melanjutkan ke pembayaran.
+          </p>
         </div>
         <button
           onClick={clearCart}
@@ -82,7 +84,10 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigateToMenu, onOrderCre
               className="bg-white rounded-2xl border border-gray-200 p-4 flex gap-4 items-center shadow-sm"
             >
               <img
-                src={menu.imageUrl || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80'}
+                src={
+                  menu.imageUrl ||
+                  'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80'
+                }
                 alt={menu.name}
                 className="w-20 h-20 rounded-xl object-cover bg-gray-100 flex-shrink-0"
               />
@@ -92,7 +97,10 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigateToMenu, onOrderCre
                   Rp {menu.price.toLocaleString('id-ID')}
                 </p>
                 <p className="text-[11px] text-gray-400 mt-1">
-                  Subtotal: <span className="font-semibold text-gray-700">Rp {(menu.price * quantity).toLocaleString('id-ID')}</span>
+                  Subtotal:{' '}
+                  <span className="font-semibold text-gray-700">
+                    Rp {(menu.price * quantity).toLocaleString('id-ID')}
+                  </span>
                 </p>
               </div>
 
@@ -146,7 +154,9 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigateToMenu, onOrderCre
             <div className="space-y-2 text-xs text-gray-600 pb-4 border-b border-gray-100">
               <div className="flex justify-between">
                 <span>Total Item ({totalItems})</span>
-                <span className="font-semibold text-gray-900">Rp {totalPrice.toLocaleString('id-ID')}</span>
+                <span className="font-semibold text-gray-900">
+                  Rp {totalPrice.toLocaleString('id-ID')}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span>Biaya Layanan Antrean</span>

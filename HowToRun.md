@@ -1,6 +1,6 @@
 # Panduan Menjalankan Aplikasi (HowToRun.md)
 
-**Aplikasi:** Sistem Antrean Kantin (KantinQueue) - MVP Version 1  
+**Aplikasi:** Sistem Antrean Kantin (KantinQueue) - MVP Final Version (P7)  
 **Mata Kuliah:** Rekayasa Perangkat Lunak (RPL)  
 **Teknologi:** React 18, TypeScript, Vite, Tailwind CSS, Node.js, Express, Prisma ORM, MySQL.
 
@@ -151,31 +151,37 @@ Buka browser Anda ke **`http://localhost:5173`**:
 1. **Pilih Menu**:
    - Telusuri menu kantin, coba gunakan filter kategori (**Semua**, **Makanan**, **Minuman**) atau kolom pencarian (misal: ketik "Goreng").
    - Klik tombol **+ Tambah** pada menu *Nasi Goreng Spesial* (Rp 15.000) dan *Es Teh Manis Jumbo* (Rp 4.000).
-2. **Review Keranjang**:
+2. **Review Keranjang (Persistensi Data)**:
    - Klik tab **Keranjang** di navbar atas.
+   - Pilihan menu tersimpan stabil dan tidak hilang saat Anda berpindah tab.
    - Ubah jumlah porsi menggunakan tombol `+` atau `-`. Periksa total harga yang terkalkulasi otomatis.
    - Klik tombol **Lanjut Bayar QRIS**.
 3. **Pembayaran QRIS & Konfirmasi**:
-   - Perhatikan tampilan kartu resmi QRIS kantin dengan total tagihan yang sesuai.
+   - Perhatikan tampilan kartu resmi QRIS kantin dengan total tagihan yang sesuai (menampilkan foto QR Code toko dari penjual tanpa NMID).
    - Masukkan catatan/link bukti transfer opsional, lalu klik **Saya Sudah Bayar (Konfirmasi)**.
    - Klik **Pantau Status Antrean** untuk diarahkan ke layar pemantau antrean mahasiswa.
 
-### Skenario B: Alur Penjual (Approval Bayar & Manajemen Antrean Dapur)
-1. **Beralih ke Mode Penjual**:
+### Skenario B: Alur Penjual (Keamanan Password, Unggah QR, & Dapur)
+1. **Beralih ke Mode Penjual & Pop-up Password**:
    - Di sudut kanan atas navbar, klik tombol switch **Penjual**.
-2. **Persetujuan Pembayaran**:
+   - Sistem akan memunculkan pop-up pembuatan password penjual (pertama kali) atau input password penjual.
+   - Harap catat password tersebut karena tidak ada fitur lupa password.
+2. **Pengaturan Foto QR Code Toko**:
+   - Pada kartu "QR Code Pembayaran Kantin", penjual dapat mengunggah foto QR Code sendiri dalam format `.jpg` atau `.png`.
+   - Gambar ini otomatis tersimpan dan digunakan mahasiswa saat membayar.
+3. **Persetujuan Pembayaran**:
    - Pada tab **Pesanan Masuk**, cari pesanan mahasiswa yang baru masuk (berstatus *WAITING_PAYMENT*).
    - Klik tombol **Setujui Pembayaran**.
    - Sistem akan otomatis mengubah status pembayaran menjadi `PAID`, pesanan menjadi `CONFIRMED`, dan **menerbitkan nomor antrean sekuensial (misal: `A-001`)**.
-3. **Pemrosesan Dapur**:
+4. **Pemrosesan Dapur**:
    - Klik tombol **Mulai Siapkan / Masak Pesanan** (status berubah menjadi `PREPARING` / `IN_PROGRESS`).
    - Setelah makanan matang, klik **Tandai Siap Diambil di Konter** (status berubah menjadi `READY`).
    - Begitu mahasiswa mengambil pesanannya di konter, klik **Pesanan Selesai Diambil** (status `COMPLETED`).
-4. **Layar Display Monitor Panggilan Antrean**:
-   - Klik tab **Layar Display Monitor** di navbar penjual.
-   - Amati tampilan papan digital monitor layar penuh yang memisahkan kolom **"Sedang Disiapkan"** dan **"Silakan Ambil (Siap)"** yang diperbarui otomatis setiap 4 detik.
-5. **Kelola Menu**:
-   - Klik tab **Kelola Menu** untuk menambah menu baru atau mematikan switch ketersediaan (*Tersedia* $\rightarrow$ *Habis*).
+5. **Layar Display Monitor TV Multi-Mode**:
+   - Klik tab **Layar Display Monitor** di navbar penjual (atau buka `http://localhost:5173/seller/display`).
+   - Pilih mode tampilan: **Monitor Antrean**, **Ketersediaan Menu** (info menu *Tersedia* vs *Habis*), atau **Layar Bersama (Split)**.
+6. **Kembali ke Mahasiswa**:
+   - Cukup klik tombol tab **Mahasiswa** di pojok kanan atas navbar untuk kembali ke mode pembeli.
 
 ---
 
