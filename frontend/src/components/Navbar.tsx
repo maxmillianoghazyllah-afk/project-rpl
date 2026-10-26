@@ -1,30 +1,52 @@
 import React from 'react';
-import { ShoppingBag, UtensilsCrossed, Clock, History, Store, Monitor, ShieldCheck, User } from 'lucide-react';
+import {
+  ShoppingBag,
+  UtensilsCrossed,
+  Clock,
+  History,
+  Store,
+  Monitor,
+  ShieldCheck,
+  User,
+  KeyRound,
+  LogOut,
+  Lock,
+} from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { UserRole } from '../types';
 
 interface NavbarProps {
   currentTab: string;
-  setCurrentTab: (tab: string) => void;
+  onNavigate: (tab: string) => void;
   activeRole: UserRole;
-  setActiveRole: (role: UserRole) => void;
+  onRequestSellerLogin: (targetTab?: string) => void;
+  onOpenChangePassword: () => void;
+  onSellerLogout: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   currentTab,
-  setCurrentTab,
+  onNavigate,
   activeRole,
-  setActiveRole,
+  onRequestSellerLogin,
+  onOpenChangePassword,
+  onSellerLogout,
 }) => {
   const { totalItems } = useCart();
 
-  const handleRoleToggle = (newRole: UserRole) => {
-    setActiveRole(newRole);
-    localStorage.setItem('kantin_active_role', newRole);
-    if (newRole === 'SELLER') {
-      setCurrentTab('seller-orders');
+  const handleRoleClick = (targetRole: UserRole) => {
+    if (targetRole === 'SELLER') {
+      if (activeRole === 'SELLER') {
+        onNavigate('seller-orders');
+      } else {
+        onRequestSellerLogin('seller-orders');
+      }
     } else {
-      setCurrentTab('menu');
+      if (activeRole === 'SELLER') {
+        onSellerLogout();
+      } else {
+        onNavigate('menu');
+      }
     }
   };
 
@@ -33,7 +55,10 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Brand Logo */}
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => setCurrentTab(activeRole === 'CUSTOMER' ? 'menu' : 'seller-orders')}>
+          <div
+            className="flex items-center gap-3 cursor-pointer"
+            onClick={() => onNavigate(activeRole === 'CUSTOMER' ? 'menu' : 'seller-orders')}
+          >
             <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-amber-500 flex items-center justify-center text-white shadow-md shadow-brand-500/20">
               <UtensilsCrossed className="w-5 h-5" />
             </div>
@@ -47,12 +72,12 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </div>
 
-          {/* Navigation Items */}
+          {/* Navigation Items (Desktop) */}
           <nav className="hidden md:flex items-center gap-1">
             {activeRole === 'CUSTOMER' ? (
               <>
                 <button
-                  onClick={() => setCurrentTab('menu')}
+                  onClick={() => onNavigate('menu')}
                   className={`px-3.5 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition ${
                     currentTab === 'menu'
                       ? 'bg-brand-50 text-brand-600'
@@ -63,7 +88,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   Katalog Menu
                 </button>
                 <button
-                  onClick={() => setCurrentTab('cart')}
+                  onClick={() => onNavigate('cart')}
                   className={`px-3.5 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 relative transition ${
                     currentTab === 'cart'
                       ? 'bg-brand-50 text-brand-600'
@@ -79,7 +104,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   )}
                 </button>
                 <button
-                  onClick={() => setCurrentTab('queue')}
+                  onClick={() => onNavigate('queue')}
                   className={`px-3.5 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition ${
                     currentTab === 'queue'
                       ? 'bg-brand-50 text-brand-600'
@@ -90,7 +115,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   Pantau Antrean
                 </button>
                 <button
-                  onClick={() => setCurrentTab('history')}
+                  onClick={() => onNavigate('history')}
                   className={`px-3.5 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition ${
                     currentTab === 'history'
                       ? 'bg-brand-50 text-brand-600'
@@ -104,7 +129,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             ) : (
               <>
                 <button
-                  onClick={() => setCurrentTab('seller-orders')}
+                  onClick={() => onNavigate('seller-orders')}
                   className={`px-3.5 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition ${
                     currentTab === 'seller-orders'
                       ? 'bg-brand-50 text-brand-600'
@@ -115,7 +140,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   Pesanan Masuk
                 </button>
                 <button
-                  onClick={() => setCurrentTab('seller-menus')}
+                  onClick={() => onNavigate('seller-menus')}
                   className={`px-3.5 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition ${
                     currentTab === 'seller-menus'
                       ? 'bg-brand-50 text-brand-600'
@@ -126,7 +151,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   Kelola Menu
                 </button>
                 <button
-                  onClick={() => setCurrentTab('seller-display')}
+                  onClick={() => onNavigate('seller-display')}
                   className={`px-3.5 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition ${
                     currentTab === 'seller-display'
                       ? 'bg-brand-50 text-brand-600'
@@ -140,11 +165,34 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </nav>
 
-          {/* Role Switcher Pill */}
-          <div className="flex items-center gap-3">
+          {/* Right Action Bar */}
+          <div className="flex items-center gap-2.5">
+            {/* Seller Action Controls (Ganti Password & Keluar) */}
+            {activeRole === 'SELLER' && (
+              <div className="flex items-center gap-1.5 mr-1 border-r border-gray-200 pr-2.5">
+                <button
+                  onClick={onOpenChangePassword}
+                  title="Ganti Password Penjual"
+                  className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 flex items-center gap-1.5 transition border border-gray-200"
+                >
+                  <KeyRound className="w-3.5 h-3.5 text-amber-600" />
+                  <span className="hidden sm:inline">Ganti Password</span>
+                </button>
+                <button
+                  onClick={onSellerLogout}
+                  title="Kunci Sesi & Keluar ke Mode Mahasiswa"
+                  className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 flex items-center gap-1.5 transition border border-rose-200"
+                >
+                  <LogOut className="w-3.5 h-3.5 text-rose-600" />
+                  <span className="hidden sm:inline">Kunci / Keluar</span>
+                </button>
+              </div>
+            )}
+
+            {/* Role Switcher Pill */}
             <div className="bg-gray-100 p-1 rounded-xl flex items-center border border-gray-200 text-xs font-semibold">
               <button
-                onClick={() => handleRoleToggle('CUSTOMER')}
+                onClick={() => handleRoleClick('CUSTOMER')}
                 className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition ${
                   activeRole === 'CUSTOMER'
                     ? 'bg-white text-brand-600 shadow-sm font-bold'
@@ -155,14 +203,18 @@ export const Navbar: React.FC<NavbarProps> = ({
                 Mahasiswa
               </button>
               <button
-                onClick={() => handleRoleToggle('SELLER')}
+                onClick={() => handleRoleClick('SELLER')}
                 className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition ${
                   activeRole === 'SELLER'
                     ? 'bg-white text-emerald-600 shadow-sm font-bold'
                     : 'text-gray-500 hover:text-gray-800'
                 }`}
               >
-                <ShieldCheck className="w-3.5 h-3.5" />
+                {activeRole === 'SELLER' ? (
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                ) : (
+                  <Lock className="w-3.5 h-3.5 text-gray-400" />
+                )}
                 Penjual
               </button>
             </div>
@@ -175,28 +227,28 @@ export const Navbar: React.FC<NavbarProps> = ({
         {activeRole === 'CUSTOMER' ? (
           <>
             <button
-              onClick={() => setCurrentTab('menu')}
+              onClick={() => onNavigate('menu')}
               className={`p-2 flex flex-col items-center ${currentTab === 'menu' ? 'text-brand-600' : 'text-gray-500'}`}
             >
               <UtensilsCrossed className="w-4 h-4 mb-0.5" />
               Menu
             </button>
             <button
-              onClick={() => setCurrentTab('cart')}
+              onClick={() => onNavigate('cart')}
               className={`p-2 flex flex-col items-center relative ${currentTab === 'cart' ? 'text-brand-600' : 'text-gray-500'}`}
             >
               <ShoppingBag className="w-4 h-4 mb-0.5" />
               Keranjang {totalItems > 0 && `(${totalItems})`}
             </button>
             <button
-              onClick={() => setCurrentTab('queue')}
+              onClick={() => onNavigate('queue')}
               className={`p-2 flex flex-col items-center ${currentTab === 'queue' ? 'text-brand-600' : 'text-gray-500'}`}
             >
               <Clock className="w-4 h-4 mb-0.5" />
               Antrean
             </button>
             <button
-              onClick={() => setCurrentTab('history')}
+              onClick={() => onNavigate('history')}
               className={`p-2 flex flex-col items-center ${currentTab === 'history' ? 'text-brand-600' : 'text-gray-500'}`}
             >
               <History className="w-4 h-4 mb-0.5" />
@@ -206,21 +258,21 @@ export const Navbar: React.FC<NavbarProps> = ({
         ) : (
           <>
             <button
-              onClick={() => setCurrentTab('seller-orders')}
+              onClick={() => onNavigate('seller-orders')}
               className={`p-2 flex flex-col items-center ${currentTab === 'seller-orders' ? 'text-brand-600' : 'text-gray-500'}`}
             >
               <Store className="w-4 h-4 mb-0.5" />
               Pesanan
             </button>
             <button
-              onClick={() => setCurrentTab('seller-menus')}
+              onClick={() => onNavigate('seller-menus')}
               className={`p-2 flex flex-col items-center ${currentTab === 'seller-menus' ? 'text-brand-600' : 'text-gray-500'}`}
             >
               <UtensilsCrossed className="w-4 h-4 mb-0.5" />
               Menu
             </button>
             <button
-              onClick={() => setCurrentTab('seller-display')}
+              onClick={() => onNavigate('seller-display')}
               className={`p-2 flex flex-col items-center ${currentTab === 'seller-display' ? 'text-brand-600' : 'text-gray-500'}`}
             >
               <Monitor className="w-4 h-4 mb-0.5" />
