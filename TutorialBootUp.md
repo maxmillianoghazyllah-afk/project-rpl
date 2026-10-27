@@ -10,3 +10,5 @@ Untuk frontend, jalankan:
 
 cd C:[folder path \frontend]
 npm.cmd run dev
+
+Buka http://localhost:5173/
