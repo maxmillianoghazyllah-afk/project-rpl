@@ -11,15 +11,34 @@ import {
   DollarSign,
   Utensils,
   ExternalLink,
+  Monitor,
+  KeyRound,
+  QrCode,
+  Upload,
+  X,
+  Trash2,
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { Order } from '../../types';
 
-export const SellerDashboardPage: React.FC = () => {
+interface SellerDashboardPageProps {
+  onNavigateToTab?: (tab: string) => void;
+  onRequestChangePassword?: () => void;
+}
+
+export const SellerDashboardPage: React.FC<SellerDashboardPageProps> = ({
+  onNavigateToTab,
+  onRequestChangePassword,
+}) => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterTab, setFilterTab] = useState<string>('all');
   const [actionLoading, setActionLoading] = useState<number | null>(null);
+
+  // QRIS Custom Upload states
+  const [showQrisModal, setShowQrisModal] = useState(false);
+  const [qrisPreview, setQrisPreview] = useState<string | null>(null);
+  const [qrisSuccessMsg, setQrisSuccessMsg] = useState<string | null>(null);
 
   useEffect(() => {
     loadOrders();
@@ -62,6 +81,34 @@ export const SellerDashboardPage: React.FC = () => {
     }
   };
 
+  const handleDeleteOrder = async (orderId: number, orderNumber: string) => {
+    if (!confirm(`Hapus antrean pesanan ${orderNumber}?\nAntrean ini akan dihapus agar tidak menumpuk.`)) {
+      return;
+    }
+    try {
+      await api.deleteOrder(orderId);
+      await loadOrders();
+    } catch (err: any) {
+      alert(err.message || 'Gagal menghapus pesanan');
+    }
+  };
+
+  const handleClearAllOrders = async () => {
+    if (
+      !confirm(
+        'Hapus SEMUA antrean & pesanan yang ada?\nSemua antrean yang selesai dan riwayat akan dibersihkan agar daftar antrean tidak menumpuk.'
+      )
+    ) {
+      return;
+    }
+    try {
+      await api.clearAllOrders();
+      await loadOrders();
+    } catch (err: any) {
+      alert(err.message || 'Gagal membersihkan antrean');
+    }
+  };
+
   const filteredOrders = orders.filter((ord) => {
     if (filterTab === 'need_confirmation') {
       return ord.status === 'WAITING_PAYMENT' && ord.payment?.status === 'PENDING';
@@ -95,14 +142,60 @@ export const SellerDashboardPage: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={loadOrders}
-          disabled={loading}
-          className="px-4 py-2 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-brand-600' : ''}`} />
-          Segarkan
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => {
+              setQrisPreview(localStorage.getItem('kantin_custom_qris'));
+              setShowQrisModal(true);
+            }}
+            className="px-3.5 py-2 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition"
+            title="Unggah QRIS Toko Kantin (PNG/JPG)"
+          >
+            <QrCode className="w-3.5 h-3.5 text-purple-600" />
+            Unggah QRIS Toko
+          </button>
+
+          {onRequestChangePassword && (
+            <button
+              onClick={onRequestChangePassword}
+              className="px-3.5 py-2 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition"
+              title="Ganti Password Akses Penjual"
+            >
+              <KeyRound className="w-3.5 h-3.5 text-blue-600" />
+              Ganti Password
+            </button>
+          )}
+
+          {onNavigateToTab && (
+            <button
+              onClick={() => onNavigateToTab('seller-display')}
+              className="px-3.5 py-2 bg-gray-900 hover:bg-black text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition"
+              title="Buka Layar Display TV Konter"
+            >
+              <Monitor className="w-3.5 h-3.5 text-amber-400" />
+              Buka Display TV
+            </button>
+          )}
+
+          <button
+            onClick={loadOrders}
+            disabled={loading}
+            className="px-3.5 py-2 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-brand-600' : ''}`} />
+            Segarkan
+          </button>
+
+          <button
+            onClick={handleClearAllOrders}
+            disabled={orders.length === 0}
+            className="px-3.5 py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition disabled:opacity-40"
+            title="Bersihkan semua antrean yang sudah selesai agar tidak menumpuk"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            Bersihkan Semua Antrean
+          </button>
+        </div>
       </div>
 
       {/* Filter Tabs */}
@@ -189,7 +282,7 @@ export const SellerDashboardPage: React.FC = () => {
                       </span>
                     </div>
 
-                    <div className="text-right">
+                    <div className="flex items-center gap-2">
                       {ord.queue ? (
                         <span className="px-3 py-1 rounded-xl text-xs font-mono font-black bg-brand-600 text-white shadow-sm">
                           Antrean: {ord.queue.queueNumber}
@@ -199,6 +292,14 @@ export const SellerDashboardPage: React.FC = () => {
                           {ord.status}
                         </span>
                       )}
+
+                      <button
+                        onClick={() => handleDeleteOrder(ord.id, ord.orderNumber)}
+                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                        title="Hapus antrean pesanan ini agar tidak menumpuk"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
 
@@ -307,6 +408,132 @@ export const SellerDashboardPage: React.FC = () => {
               </div>
             );
           })}
+        </div>
+      )}
+      {/* QRIS Upload Modal */}
+      {showQrisModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl relative border border-gray-100 animate-in fade-in duration-150">
+            <div className="flex justify-between items-center mb-4 pb-3 border-b border-gray-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center">
+                  <QrCode className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-base text-gray-900">Pengaturan QRIS Toko</h3>
+                  <p className="text-[11px] text-gray-500">Unggah QRIS khusus dalam format PNG atau JPG</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowQrisModal(false);
+                  setQrisSuccessMsg(null);
+                }}
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {qrisSuccessMsg && (
+              <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-700 font-semibold flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                {qrisSuccessMsg}
+              </div>
+            )}
+
+            {/* Preview Box */}
+            <div className="mb-4 text-center">
+              <label className="block text-xs font-bold text-gray-700 mb-2 text-left">
+                Tampilan QRIS yang Aktif:
+              </label>
+              <div className="w-48 h-48 mx-auto bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl flex items-center justify-center p-2 overflow-hidden shadow-inner">
+                {qrisPreview ? (
+                  <img
+                    src={qrisPreview}
+                    alt="Preview QRIS"
+                    className="w-full h-full object-contain rounded-xl"
+                  />
+                ) : (
+                  <div className="text-gray-400 text-xs font-medium p-4 text-center">
+                    <QrCode className="w-10 h-10 mx-auto mb-2 text-gray-300" />
+                    Belum ada QRIS custom. Masih menggunakan QRIS sistem bawaan.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Upload File Input */}
+            <div className="mb-5">
+              <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                Pilih File Gambar Baru (.png atau .jpg)
+              </label>
+              <input
+                type="file"
+                accept="image/png, image/jpeg, image/jpg"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    if (!file.type.includes('image/png') && !file.type.includes('image/jpeg') && !file.type.includes('image/jpg')) {
+                      alert('Format file tidak didukung! Harap unggah file PNG atau JPG.');
+                      return;
+                    }
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                      setQrisPreview(reader.result as string);
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+                className="w-full text-xs text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 cursor-pointer"
+              />
+              <p className="text-[10px] text-gray-400 mt-1">
+                Gambar QRIS ini akan otomatis tampil di layar checkout mahasiswa.
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!qrisPreview) {
+                    alert('Silakan pilih file gambar QRIS terlebih dahulu!');
+                    return;
+                  }
+                  localStorage.setItem('kantin_custom_qris', qrisPreview);
+                  setQrisSuccessMsg('QRIS kustom berhasil disimpan dan diaktifkan!');
+                  setTimeout(() => {
+                    setShowQrisModal(false);
+                    setQrisSuccessMsg(null);
+                  }, 1200);
+                }}
+                className="w-full py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center justify-center gap-1.5"
+              >
+                <Upload className="w-4 h-4" />
+                Simpan & Pasang QRIS
+              </button>
+
+              {localStorage.getItem('kantin_custom_qris') && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    localStorage.removeItem('kantin_custom_qris');
+                    setQrisPreview(null);
+                    setQrisSuccessMsg('QRIS dikembalikan ke pengaturan standar.');
+                    setTimeout(() => {
+                      setShowQrisModal(false);
+                      setQrisSuccessMsg(null);
+                    }, 1200);
+                  }}
+                  className="w-full py-2 bg-gray-50 hover:bg-gray-100 text-red-600 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Hapus QRIS Kustom (Gunakan Bawaan)
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
