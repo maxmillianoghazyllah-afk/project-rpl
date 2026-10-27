@@ -134,7 +134,38 @@ Fitur diverifikasi melalui 3 lapisan pengujian:
 
 ---
 
-## 5. Skenario Demo Singkat (Untuk Penilaian)
+## 5. Bukti Eksekusi Unit Test (Terminal Output)
+
+```
+> kantin-queue-backend@1.0.0 test
+> ts-node tests/run-all-tests.ts
+
+🧪 Menjalankan Unit Tests: Fitur 1 - Pemesanan & Kalkulasi Pesanan...
+  ✔ [PASS] calculateItemSubtotal mengembalikan subtotal yang benar
+  ✔ [PASS] calculateItemSubtotal menolak kuantitas <= 0
+  ✔ [PASS] calculateItemSubtotal menolak harga negatif
+  ✔ [PASS] calculateOrderTotal menjumlahkan seluruh subtotal secara presisi
+  ✔ [PASS] processOrderItems menghasilkan kalkulasi item dan total yang benar
+  ✔ [PASS] processOrderItems menolak menu yang tidak tersedia (habis)
+  ✔ [PASS] generateOrderNumber menghasilkan format ORD-YYYYMMDD-XXXX
+🎉 Seluruh Unit Test Fitur 1 (Order Service) BERHASIL LULUS!
+
+🧪 Menjalankan Unit Tests: Fitur 2 - Pembayaran QRIS & Manajemen Antrean...
+  ✔ [PASS] formatQueueNumber menghasilkan padding 3 digit yang tepat (A-001)
+  ✔ [PASS] formatQueueNumber menolak angka 0, negatif, atau desimal
+  ✔ [PASS] isValidPaymentTransition memvalidasi alur persetujuan & penolakan QRIS
+  ✔ [PASS] isValidQueueTransition mencegah perubahan status antrean mundur ilegal
+  ✔ [PASS] mapQueueStatusToOrderStatus menyinkronkan status pesanan secara presisi
+🎉 Seluruh Unit Test Fitur 2 (Queue Service) BERHASIL LULUS!
+
+==================================================
+✅ SELURUH UNIT TEST FITUR INTI MVP 1 BERHASIL LULUS 100%
+==================================================
+```
+
+---
+
+## 6. Skenario Demo Singkat (Untuk Penilaian)
 
 1. **Jalankan Aplikasi:**
    - Terminal 1: `cd backend && npm run dev` (API berjalan di `http://localhost:5000`)
