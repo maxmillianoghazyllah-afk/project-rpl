@@ -99,8 +99,3 @@ Aplikasi dinyatakan berhasil apabila:
 - Mahasiswa dapat melihat perkembangan antrean.
 - Penjual dapat mengubah status pesanan.
 - Pesanan dapat diselesaikan sampai mahasiswa mengambil pesanannya.
-  ```
-  Web UI akan aktif di `http://localhost:5173`
-
-Buka browser Anda ke `http://localhost:5173` untuk mengakses aplikasi.
-
