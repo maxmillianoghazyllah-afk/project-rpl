@@ -10,5 +10,3 @@ Untuk frontend, jalankan:
 
 cd C:[folder path \frontend]
 npm.cmd run dev
-
-Selamat menggunakan!
