@@ -1,0 +1,84 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                Int       @id @default(autoincrement())
+  name              String
+  email             String    @unique
+  passwordHash      String
+  role              String    @default("CUSTOMER") // CUSTOMER or SELLER
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  orders            Order[]
+  confirmedPayments Payment[] @relation("ConfirmedPayments")
+}
+
+model Menu {
+  id          Int         @id @default(autoincrement())
+  name        String
+  description String?     @db.Text
+  price       Int
+  imageUrl    String?     @db.Text
+  isAvailable Boolean     @default(true)
+  category    String      @default("Makanan")
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  orderItems  OrderItem[]
+}
+
+model Order {
+  id          Int         @id @default(autoincrement())
+  userId      Int
+  user        User        @relation(fields: [userId], references: [id])
+  orderNumber String      @unique
+  totalAmount Int
+  status      String      @default("WAITING_PAYMENT") // WAITING_PAYMENT, CONFIRMED, PREPARING, READY, COMPLETED, CANCELLED
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  items       OrderItem[]
+  payment     Payment?
+  queue       Queue?
+}
+
+model OrderItem {
+  id           Int      @id @default(autoincrement())
+  orderId      Int
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuId       Int
+  menu         Menu     @relation(fields: [menuId], references: [id])
+  quantity     Int
+  priceAtOrder Int
+  subtotal     Int
+}
+
+model Payment {
+  id          Int      @id @default(autoincrement())
+  orderId     Int      @unique
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  method      String   @default("QRIS")
+  amount      Int
+  status      String   @default("PENDING") // PENDING, PAID, REJECTED, CANCELLED
+  proofUrl    String?  @db.Text
+  confirmedBy Int?
+  confirmer   User?    @relation("ConfirmedPayments", fields: [confirmedBy], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Queue {
+  id          Int      @id @default(autoincrement())
+  orderId     Int      @unique
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  queueNumber String
+  status      String   @default("WAITING") // WAITING, IN_PROGRESS, READY, COMPLETED
+  createdAt   DateTime @default(now())
+}
