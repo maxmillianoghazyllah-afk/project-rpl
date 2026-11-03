@@ -41,3 +41,5 @@ Thumbs.db
 # Temporary / Scratch Files
 scratch/
 doc_extracted.txt
+*.mp4
+demo/

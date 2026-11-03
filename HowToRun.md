@@ -106,6 +106,7 @@ npm test
   ✔ [PASS] validateMenuData membatasi kategori hanya Makanan, Minuman, atau Camilan
   ✔ [PASS] determineMenuDeletionStrategy melindungi integritas riwayat pesanan
   ✔ [PASS] filterMenuList menyaring kategori, pencarian, dan stok secara presisi
+  ✔ [PASS] registerCategory & unregisterCategory mengelola kategori kustom & melindungi kategori permanen
 🎉 Seluruh Unit Test Manajemen Menu BERHASIL LULUS!
 
 🧪 Menjalankan Unit Tests: Autentikasi & Hak Akses Pengguna (auth.test.ts)...
@@ -115,8 +116,15 @@ npm test
   ✔ [PASS] hasSellerPrivilege membatasi akses khusus penjual kantin
 🎉 Seluruh Unit Test Autentikasi & Hak Akses BERHASIL LULUS!
 
+🧪 Menjalankan Unit Tests: Keamanan Sistem & Safe Logging (security.test.ts)...
+  ✔ [PASS] maskSensitiveData menyamarkan password, hash, dan token otentikasi secara rekursif
+  ✔ [PASS] maskSensitiveData menyamarkan token pada header Authorization
+  ✔ [PASS] formatLogEntry menghasilkan log terstruktur dan bebas dari kebocoran kredensial
+  ✔ [PASS] Input catatan pesanan diperlakukan sebagai literal text untuk mencegah eksekusi skrip
+🎉 Seluruh Unit Test Keamanan & Safe Logging BERHASIL LULUS!
+
 ================================================================
-✅ SELURUH 5 UNIT TEST FILES FITUR INTI MVP 1 BERHASIL LULUS (ALL PASSED)
+✅ SELURUH 6 UNIT TEST FILES FITUR INTI & KEAMANAN P8 BERHASIL LULUS (ALL PASSED)
 ================================================================
 ```
 
