@@ -1,6 +1,12 @@
 import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma';
-import { validateMenuData, determineMenuDeletionStrategy } from '../services/menu.service';
+import {
+  validateMenuData,
+  determineMenuDeletionStrategy,
+  getRegisteredCategories,
+  registerCategory,
+  unregisterCategory,
+} from '../services/menu.service';
 
 export const getMenus = async (req: Request, res: Response) => {
   try {
@@ -136,5 +142,34 @@ export const deleteMenu = async (req: Request, res: Response) => {
     return res.json({ message: 'Menu berhasil dihapus' });
   } catch (error: any) {
     return res.status(500).json({ message: 'Gagal menghapus menu', error: error.message });
+  }
+};
+
+export const getCategories = async (req: Request, res: Response) => {
+  try {
+    const categories = getRegisteredCategories();
+    return res.json({ categories });
+  } catch (error: any) {
+    return res.status(500).json({ message: 'Gagal mengambil kategori menu', error: error.message });
+  }
+};
+
+export const addCategory = async (req: Request, res: Response) => {
+  try {
+    const { name } = req.body;
+    const categories = registerCategory(name);
+    return res.status(201).json({ message: 'Kategori berhasil ditambahkan', categories });
+  } catch (error: any) {
+    return res.status(400).json({ message: error.message || 'Gagal menambahkan kategori' });
+  }
+};
+
+export const removeCategory = async (req: Request, res: Response) => {
+  try {
+    const name = String(req.params.name);
+    const categories = unregisterCategory(name);
+    return res.json({ message: 'Kategori berhasil dihapus', categories });
+  } catch (error: any) {
+    return res.status(400).json({ message: error.message || 'Gagal menghapus kategori' });
   }
 };

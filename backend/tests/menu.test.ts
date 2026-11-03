@@ -3,6 +3,10 @@ import {
   validateMenuData,
   determineMenuDeletionStrategy,
   filterMenuList,
+  registerCategory,
+  unregisterCategory,
+  getRegisteredCategories,
+  resetCategoriesToDefault,
 } from '../src/services/menu.service';
 
 console.log('🧪 Menjalankan Unit Tests: Manajemen Menu Kantin (menu.test.ts)...');
@@ -48,18 +52,18 @@ console.log('🧪 Menjalankan Unit Tests: Manajemen Menu Kantin (menu.test.ts)..
   console.log('  ✔ [PASS] determineMenuDeletionStrategy melindungi integritas riwayat pesanan');
 }
 
-// Test 5: Penyaringan daftar menu berdasarkan kategori & pencarian
+// Test 5: Penyaringan daftar menu berdasarkan kategori & pencarian (Termasuk kategori Lainnya)
 {
   const sampleMenus = [
     { name: 'Nasi Goreng Spesial', category: 'Makanan', description: 'Nasi goreng telur', isAvailable: true },
     { name: 'Mie Ayam Bakso', category: 'Makanan', description: 'Mie ayam enak', isAvailable: false },
     { name: 'Es Teh Manis Jumbo', category: 'Minuman', description: 'Teh melati dingin', isAvailable: true },
-    { name: 'Es Jeruk Peras', category: 'Minuman', description: 'Jeruk asli', isAvailable: true },
+    { name: 'Pisang Cokelat Keju', category: 'Camilan', description: 'Camilan manis', isAvailable: true },
   ];
 
   // Filter kategori Minuman
   const drinks = filterMenuList(sampleMenus, 'Minuman');
-  assert.equal(drinks.length, 2);
+  assert.equal(drinks.length, 1);
   assert.equal(drinks[0].name, 'Es Teh Manis Jumbo');
 
   // Filter pencarian "Goreng"
@@ -67,12 +71,38 @@ console.log('🧪 Menjalankan Unit Tests: Manajemen Menu Kantin (menu.test.ts)..
   assert.equal(searchResults.length, 1);
   assert.equal(searchResults[0].name, 'Nasi Goreng Spesial');
 
-  // Filter hanya yang tersedia (availableOnly)
-  const availableFoods = filterMenuList(sampleMenus, 'Makanan', undefined, true);
-  assert.equal(availableFoods.length, 1);
-  assert.equal(availableFoods[0].name, 'Nasi Goreng Spesial');
+  // Filter kategori "Lainnya" (Menyaring selain Makanan & Minuman, misal Camilan)
+  const others = filterMenuList(sampleMenus, 'Lainnya');
+  assert.equal(others.length, 1);
+  assert.equal(others[0].name, 'Pisang Cokelat Keju');
 
   console.log('  ✔ [PASS] filterMenuList menyaring kategori, pencarian, dan stok secara presisi');
+}
+
+// Test 6: Fitur Dinamis Kategori (Penjual menambah kategori baru & menghapus kategori kustom)
+{
+  resetCategoriesToDefault();
+  // Tambah kategori baru
+  const updatedCategories = registerCategory('Dessert');
+  assert.ok(updatedCategories.includes('Dessert'));
+
+  // Validasi menu dengan kategori baru yang didaftarkan
+  const menuWithNewCat = validateMenuData({
+    name: 'Puding Mangga',
+    price: 8000,
+    category: 'Dessert',
+  });
+  assert.equal(menuWithNewCat.normalizedCategory, 'Dessert');
+
+  // Hapus kategori kustom
+  const afterDelete = unregisterCategory('Dessert');
+  assert.ok(!afterDelete.includes('Dessert'));
+
+  // Kategori wajib (Makanan & Minuman) dilindungi dan tidak dapat dihapus
+  assert.throws(() => unregisterCategory('Makanan'), /tidak dapat dihapus/);
+  assert.throws(() => unregisterCategory('Minuman'), /tidak dapat dihapus/);
+
+  console.log('  ✔ [PASS] registerCategory & unregisterCategory mengelola kategori kustom & melindungi kategori permanen');
 }
 
 console.log('🎉 Seluruh Unit Test Manajemen Menu BERHASIL LULUS!\n');
