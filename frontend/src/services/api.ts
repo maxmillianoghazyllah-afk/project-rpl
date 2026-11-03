@@ -2,108 +2,46 @@ import { Menu, Order, QueueResponse, UserRole } from '../types';
 
 const API_BASE = '/api';
 
-const DEFAULT_MENUS: Menu[] = [
-  {
-    id: 1,
-    name: 'Nasi Goreng Spesial',
-    description: 'Nasi goreng harum dengan suwiran ayam, telur ceplok, kerupuk, dan acar segar.',
-    price: 15000,
-    imageUrl: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=600&auto=format&fit=crop&q=80',
-    category: 'Makanan',
-    isAvailable: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 2,
-    name: 'Ayam Geprek Sambal Bawang',
-    description: 'Ayam krispi renyah digeprek dengan cabai rawit pedas mantap plus nasi putih hangat.',
-    price: 18000,
-    imageUrl: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=600&auto=format&fit=crop&q=80',
-    category: 'Makanan',
-    isAvailable: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 3,
-    name: 'Mie Goreng Telur Sosis',
-    description: 'Mie goreng bumbu kecap manis gurih dengan topping sosis sapi dan telur orak-arik.',
-    price: 13000,
-    imageUrl: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?w=600&auto=format&fit=crop&q=80',
-    category: 'Makanan',
-    isAvailable: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 4,
-    name: 'Bakso Sapi Kuah Hangat',
-    description: 'Bakso urat sapi kenyal dengan bihun, tahu, seledri, dan kaldu sapi gurih nikmat.',
-    price: 16000,
-    imageUrl: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=600&auto=format&fit=crop&q=80',
-    category: 'Makanan',
-    isAvailable: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 5,
-    name: 'Es Teh Manis Jumbo',
-    description: 'Teh melati seduh segar dingin dengan es batu melimpah pemuas dahaga.',
-    price: 4000,
-    imageUrl: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=600&auto=format&fit=crop&q=80',
-    category: 'Minuman',
-    isAvailable: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 6,
-    name: 'Es Jeruk Peras Murni',
-    description: 'Sari jeruk segar asli kaya vitamin C dengan es batu menyegarkan.',
-    price: 6000,
-    imageUrl: 'https://images.unsplash.com/photo-1613478223719-2ab802602423?w=600&auto=format&fit=crop&q=80',
-    category: 'Minuman',
-    isAvailable: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 7,
-    name: 'Kopi Susu Gula Aren',
-    description: 'Espresso robusta mantap dipadu susu segar dan manis legit gula aren murni.',
-    price: 10000,
-    imageUrl: 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?w=600&auto=format&fit=crop&q=80',
-    category: 'Minuman',
-    isAvailable: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 8,
-    name: 'Pisang Goreng Keju Cokelat',
-    description: 'Pisang kepok manis goreng tepung renyah dengan taburan keju cheddar dan susu cokelat.',
-    price: 8000,
-    imageUrl: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=600&auto=format&fit=crop&q=80',
-    category: 'Camilan',
-    isAvailable: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
+// Default menu kosong saat di-boot awal (penjual dapat memasukkan menu sendiri)
+const DEFAULT_MENUS: Menu[] = [];
+
+export const DEFAULT_CATEGORIES = ['Makanan', 'Minuman', 'Camilan'];
+
+function getLocalCategories(): string[] {
+  try {
+    const raw = localStorage.getItem('kantin_menu_categories');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const set = new Set([...DEFAULT_CATEGORIES.slice(0, 2), ...parsed]);
+        return Array.from(set);
+      }
+    }
+  } catch {
+    // fallback
+  }
+  return [...DEFAULT_CATEGORIES];
+}
+
+function saveLocalCategories(cats: string[]) {
+  try {
+    localStorage.setItem('kantin_menu_categories', JSON.stringify(cats));
+  } catch (e) {
+    console.error('Failed to save categories', e);
+  }
+}
 
 function getLocalMenus(): Menu[] {
   try {
     const raw = localStorage.getItem('kantin_local_menus');
-    if (raw) {
+    if (raw !== null) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed)) return parsed;
     }
   } catch (e) {
     console.error('Error reading local menus', e);
   }
-  return DEFAULT_MENUS;
+  return [];
 }
 
 function saveLocalMenus(menus: Menu[]) {
@@ -163,7 +101,7 @@ export const api = {
       });
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data.menus) && data.menus.length > 0) {
+        if (Array.isArray(data.menus)) {
           saveLocalMenus(data.menus);
           return data.menus;
         }
@@ -273,8 +211,94 @@ export const api = {
     return { message: 'Menu berhasil dihapus' };
   },
 
+  async clearAllMenus(): Promise<{ message: string }> {
+    saveLocalMenus([]);
+    return { message: 'Seluruh menu berhasil dikosongkan' };
+  },
+
+  // Categories Management (Penjual bisa tambah kategori baru & hapus kategori kustom)
+  async getCategories(): Promise<string[]> {
+    try {
+      const res = await fetch(`${API_BASE}/menus/categories`, {
+        headers: getHeaders(),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.categories) && data.categories.length > 0) {
+          saveLocalCategories(data.categories);
+          return data.categories;
+        }
+      }
+    } catch (err) {
+      // offline fallback
+    }
+    return getLocalCategories();
+  },
+
+  async addCategory(name: string): Promise<string[]> {
+    const trimmed = name?.trim();
+    if (!trimmed) throw new Error('Nama kategori tidak boleh kosong');
+
+    try {
+      const res = await fetch(`${API_BASE}/menus/categories`, {
+        method: 'POST',
+        headers: getHeaders('SELLER'),
+        body: JSON.stringify({ name: trimmed }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.categories)) {
+          saveLocalCategories(data.categories);
+          return data.categories;
+        }
+      }
+    } catch (err) {
+      // offline fallback
+    }
+
+    const current = getLocalCategories();
+    if (current.some((c) => c.toLowerCase() === trimmed.toLowerCase())) {
+      throw new Error(`Kategori "${trimmed}" sudah terdaftar`);
+    }
+    const updated = [...current, trimmed];
+    saveLocalCategories(updated);
+    return updated;
+  },
+
+  async deleteCategory(name: string): Promise<string[]> {
+    const trimmed = name?.trim();
+    if (!trimmed) throw new Error('Nama kategori tidak valid');
+    if (['makanan', 'minuman'].includes(trimmed.toLowerCase())) {
+      throw new Error('Kategori "Makanan" dan "Minuman" adalah kategori permanen dan tidak dapat dihapus');
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/menus/categories/${encodeURIComponent(trimmed)}`, {
+        method: 'DELETE',
+        headers: getHeaders('SELLER'),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.categories)) {
+          saveLocalCategories(data.categories);
+          return data.categories;
+        }
+      }
+    } catch (err) {
+      // offline fallback
+    }
+
+    const current = getLocalCategories();
+    const updated = current.filter((c) => c.toLowerCase() !== trimmed.toLowerCase());
+    saveLocalCategories(updated);
+    return updated;
+  },
+
   // Orders
-  async createOrder(items: { menuId: number; quantity: number }[], customerName?: string): Promise<Order> {
+  async createOrder(
+    items: { menuId: number; quantity: number; notes?: string }[],
+    customerName?: string
+  ): Promise<Order> {
     try {
       const res = await fetch(`${API_BASE}/orders`, {
         method: 'POST',
@@ -312,6 +336,7 @@ export const api = {
         quantity: it.quantity,
         priceAtOrder: m.price,
         subtotal,
+        notes: it.notes?.trim() || undefined,
       };
     });
 

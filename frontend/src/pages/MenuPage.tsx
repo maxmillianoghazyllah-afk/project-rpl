@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Check, ShoppingBag, Search, Sparkles } from 'lucide-react';
+import { Plus, Check, ShoppingBag, Search, Sparkles, Utensils } from 'lucide-react';
 import { api } from '../services/api';
 import { Menu } from '../types';
 import { useCart } from '../context/CartContext';
@@ -32,13 +32,20 @@ export const MenuPage: React.FC<MenuPageProps> = ({ onNavigateToCart }) => {
     }
   };
 
-  const categories = ['Semua', 'Makanan', 'Minuman'];
+  const categories = ['Semua', 'Makanan', 'Minuman', 'Lainnya'];
 
   const filteredMenus = menus.filter((menu) => {
+    const menuCat = (menu.category || 'Makanan').trim();
+    const isFood = menuCat.toLowerCase() === 'makanan';
+    const isDrink = menuCat.toLowerCase() === 'minuman';
+    const isOther = !isFood && !isDrink; // Termasuk Camilan/Cemilan & kategori baru lainnya
+
     const matchesCategory =
       selectedCategory === 'Semua' ||
-      (selectedCategory === 'Makanan' && (menu.category === 'Makanan' || !menu.category)) ||
-      menu.category === selectedCategory;
+      (selectedCategory === 'Makanan' && isFood) ||
+      (selectedCategory === 'Minuman' && isDrink) ||
+      (selectedCategory === 'Lainnya' && isOther);
+
     const matchesSearch =
       menu.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (menu.description && menu.description.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -120,8 +127,16 @@ export const MenuPage: React.FC<MenuPageProps> = ({ onNavigateToCart }) => {
           </button>
         </div>
       ) : filteredMenus.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-3xl border border-gray-100 p-8 shadow-sm">
-          <p className="text-gray-500 font-medium">Tidak ada menu yang sesuai kriteria pencarian.</p>
+        <div className="text-center py-16 bg-white rounded-3xl border border-gray-100 p-8 shadow-sm max-w-lg mx-auto">
+          <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-3">
+            <Utensils className="w-8 h-8" />
+          </div>
+          <h3 className="text-base font-bold text-gray-900">Belum Ada Menu Makanan / Minuman</h3>
+          <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
+            {menus.length === 0
+              ? 'Penjual kantin belum menambahkan menu makanan atau minuman. Silakan tunggu penjual memasukkan menu baru atau kunjungi konter.'
+              : 'Tidak ada menu yang sesuai kriteria pencarian atau kategori ini.'}
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">

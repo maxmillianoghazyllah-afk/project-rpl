@@ -6,6 +6,7 @@ interface CartContextType {
   addToCart: (menu: Menu) => void;
   removeFromCart: (menuId: number) => void;
   updateQuantity: (menuId: number, delta: number) => void;
+  updateNotes: (menuId: number, notes: string) => void;
   clearCart: () => void;
   totalItems: number;
   totalPrice: number;
@@ -57,6 +58,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
+  const updateNotes = (menuId: number, notes: string) => {
+    setItems((prev) =>
+      prev.map((item) => (item.menu.id === menuId ? { ...item, notes } : item))
+    );
+  };
+
   const clearCart = () => {
     setItems([]);
   };
@@ -71,6 +78,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addToCart,
         removeFromCart,
         updateQuantity,
+        updateNotes,
         clearCart,
         totalItems,
         totalPrice,

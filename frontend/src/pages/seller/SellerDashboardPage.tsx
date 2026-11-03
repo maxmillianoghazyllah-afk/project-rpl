@@ -39,6 +39,9 @@ export const SellerDashboardPage: React.FC<SellerDashboardPageProps> = ({
   const [showQrisModal, setShowQrisModal] = useState(false);
   const [qrisPreview, setQrisPreview] = useState<string | null>(null);
   const [qrisSuccessMsg, setQrisSuccessMsg] = useState<string | null>(null);
+  const [merchantNameInput, setMerchantNameInput] = useState<string>(() => {
+    return localStorage.getItem('kantin_merchant_name') || '';
+  });
 
   useEffect(() => {
     loadOrders();
@@ -306,13 +309,20 @@ export const SellerDashboardPage: React.FC<SellerDashboardPageProps> = ({
                   {/* Items List */}
                   <div className="py-4 space-y-2">
                     {ord.items.map((item) => (
-                      <div key={item.id} className="flex justify-between items-center text-xs">
-                        <span className="text-gray-800 font-medium">
-                          {item.menu?.name} <span className="text-gray-400 font-bold">x{item.quantity}</span>
-                        </span>
-                        <span className="text-gray-700 font-semibold">
-                          Rp {item.subtotal.toLocaleString('id-ID')}
-                        </span>
+                      <div key={item.id} className="text-xs space-y-0.5">
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-800 font-medium">
+                            {item.menu?.name} <span className="text-gray-400 font-bold">x{item.quantity}</span>
+                          </span>
+                          <span className="text-gray-700 font-semibold">
+                            Rp {item.subtotal.toLocaleString('id-ID')}
+                          </span>
+                        </div>
+                        {item.notes && (
+                          <div className="text-[11px] text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200/80 inline-block font-medium">
+                            📝 Catatan: <span className="italic">{item.notes}</span>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -463,6 +473,20 @@ export const SellerDashboardPage: React.FC<SellerDashboardPageProps> = ({
               </div>
             </div>
 
+            {/* Nama Toko / Kantin Input */}
+            <div className="mb-4">
+              <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                Nama Toko / Kantin (Opsional)
+              </label>
+              <input
+                type="text"
+                value={merchantNameInput}
+                onChange={(e) => setMerchantNameInput(e.target.value)}
+                placeholder="Contoh: Kantin Berkah, Stand Ayam Geprek..."
+                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none"
+              />
+            </div>
+
             {/* Upload File Input */}
             <div className="mb-5">
               <label className="block text-xs font-bold text-gray-700 mb-1.5">
@@ -497,12 +521,17 @@ export const SellerDashboardPage: React.FC<SellerDashboardPageProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  if (!qrisPreview) {
-                    alert('Silakan pilih file gambar QRIS terlebih dahulu!');
+                  if (!qrisPreview && !merchantNameInput.trim()) {
+                    alert('Silakan pilih file gambar QRIS atau masukkan nama toko!');
                     return;
                   }
-                  localStorage.setItem('kantin_custom_qris', qrisPreview);
-                  setQrisSuccessMsg('QRIS kustom berhasil disimpan dan diaktifkan!');
+                  if (qrisPreview) {
+                    localStorage.setItem('kantin_custom_qris', qrisPreview);
+                  }
+                  if (merchantNameInput.trim()) {
+                    localStorage.setItem('kantin_merchant_name', merchantNameInput.trim());
+                  }
+                  setQrisSuccessMsg('Pengaturan QRIS & Toko berhasil disimpan!');
                   setTimeout(() => {
                     setShowQrisModal(false);
                     setQrisSuccessMsg(null);
@@ -519,8 +548,10 @@ export const SellerDashboardPage: React.FC<SellerDashboardPageProps> = ({
                   type="button"
                   onClick={() => {
                     localStorage.removeItem('kantin_custom_qris');
+                    localStorage.removeItem('kantin_merchant_name');
                     setQrisPreview(null);
-                    setQrisSuccessMsg('QRIS dikembalikan ke pengaturan standar.');
+                    setMerchantNameInput('');
+                    setQrisSuccessMsg('QRIS kustom dihapus (dikosongkan).');
                     setTimeout(() => {
                       setShowQrisModal(false);
                       setQrisSuccessMsg(null);
@@ -529,7 +560,7 @@ export const SellerDashboardPage: React.FC<SellerDashboardPageProps> = ({
                   className="w-full py-2 bg-gray-50 hover:bg-gray-100 text-red-600 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                  Hapus QRIS Kustom (Gunakan Bawaan)
+                  Kosongkan QRIS Toko
                 </button>
               )}
             </div>
