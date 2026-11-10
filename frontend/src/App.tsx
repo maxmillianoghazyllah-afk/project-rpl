@@ -12,8 +12,23 @@ import { SellerQueueDisplayPage } from './pages/seller/SellerQueueDisplayPage';
 import { SellerAuthModal, AuthModalMode } from './components/SellerAuthModal';
 import { Order, UserRole } from './types';
 
+function getSubpathPrefix(): string {
+  const segments = window.location.pathname.split('/').filter(Boolean);
+  if (
+    segments.length > 0 &&
+    !['seller', 'cart', 'payment', 'queue', 'history', 'api'].includes(segments[0].toLowerCase())
+  ) {
+    return '/' + segments[0];
+  }
+  return '';
+}
+
 function parseUrlRoute(): { role: UserRole; tab: string; isProtected: boolean } {
-  const path = window.location.pathname.toLowerCase();
+  let path = window.location.pathname.toLowerCase();
+  const prefix = getSubpathPrefix().toLowerCase();
+  if (prefix && path.startsWith(prefix)) {
+    path = path.slice(prefix.length) || '/';
+  }
 
   if (path === '/seller/display') {
     return { role: 'SELLER', tab: 'seller-display', isProtected: true };
@@ -38,26 +53,37 @@ function parseUrlRoute(): { role: UserRole; tab: string; isProtected: boolean } 
 }
 
 function getPathForTab(tab: string): string {
+  const prefix = getSubpathPrefix();
+  let subRoute = '/';
   switch (tab) {
     case 'menu':
-      return '/';
+      subRoute = '/';
+      break;
     case 'cart':
-      return '/cart';
+      subRoute = '/cart';
+      break;
     case 'payment':
-      return '/payment';
+      subRoute = '/payment';
+      break;
     case 'queue':
-      return '/queue';
+      subRoute = '/queue';
+      break;
     case 'history':
-      return '/history';
+      subRoute = '/history';
+      break;
     case 'seller-orders':
-      return '/seller';
+      subRoute = '/seller';
+      break;
     case 'seller-menus':
-      return '/seller/menus';
+      subRoute = '/seller/menus';
+      break;
     case 'seller-display':
-      return '/seller/display';
+      subRoute = '/seller/display';
+      break;
     default:
-      return '/';
+      subRoute = '/';
   }
+  return prefix ? (subRoute === '/' ? `${prefix}/` : `${prefix}${subRoute}`) : subRoute;
 }
 
 export const App: React.FC = () => {

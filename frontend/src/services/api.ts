@@ -1,6 +1,17 @@
 import { Menu, Order, QueueResponse, UserRole } from '../types';
 
-const API_BASE = '/api';
+function getApiBase(): string {
+  if (typeof window !== 'undefined') {
+    const segments = window.location.pathname.split('/').filter(Boolean);
+    if (
+      segments.length > 0 &&
+      !['seller', 'cart', 'payment', 'queue', 'history', 'api'].includes(segments[0].toLowerCase())
+    ) {
+      return `/${segments[0]}/api`;
+    }
+  }
+  return '/api';
+}
 
 // Default menu kosong saat di-boot awal (penjual dapat memasukkan menu sendiri)
 const DEFAULT_MENUS: Menu[] = [];
@@ -96,7 +107,7 @@ export const api = {
       const params = new URLSearchParams();
       if (category) params.append('category', category);
       if (availableOnly) params.append('availableOnly', 'true');
-      const res = await fetch(`${API_BASE}/menus?${params.toString()}`, {
+      const res = await fetch(`${getApiBase()}/menus?${params.toString()}`, {
         headers: getHeaders(),
       });
       if (res.ok) {
@@ -122,7 +133,7 @@ export const api = {
 
   async createMenu(menuData: Partial<Menu>): Promise<Menu> {
     try {
-      const res = await fetch(`${API_BASE}/menus`, {
+      const res = await fetch(`${getApiBase()}/menus`, {
         method: 'POST',
         headers: getHeaders('SELLER'),
         body: JSON.stringify(menuData),
@@ -158,7 +169,7 @@ export const api = {
 
   async updateMenu(id: number, menuData: Partial<Menu>): Promise<Menu> {
     try {
-      const res = await fetch(`${API_BASE}/menus/${id}`, {
+      const res = await fetch(`${getApiBase()}/menus/${id}`, {
         method: 'PATCH',
         headers: getHeaders('SELLER'),
         body: JSON.stringify(menuData),
@@ -193,7 +204,7 @@ export const api = {
 
   async deleteMenu(id: number): Promise<{ message: string }> {
     try {
-      const res = await fetch(`${API_BASE}/menus/${id}`, {
+      const res = await fetch(`${getApiBase()}/menus/${id}`, {
         method: 'DELETE',
         headers: getHeaders('SELLER'),
       });
@@ -219,7 +230,7 @@ export const api = {
   // Categories Management (Penjual bisa tambah kategori baru & hapus kategori kustom)
   async getCategories(): Promise<string[]> {
     try {
-      const res = await fetch(`${API_BASE}/menus/categories`, {
+      const res = await fetch(`${getApiBase()}/menus/categories`, {
         headers: getHeaders(),
       });
       if (res.ok) {
@@ -240,7 +251,7 @@ export const api = {
     if (!trimmed) throw new Error('Nama kategori tidak boleh kosong');
 
     try {
-      const res = await fetch(`${API_BASE}/menus/categories`, {
+      const res = await fetch(`${getApiBase()}/menus/categories`, {
         method: 'POST',
         headers: getHeaders('SELLER'),
         body: JSON.stringify({ name: trimmed }),
@@ -273,7 +284,7 @@ export const api = {
     }
 
     try {
-      const res = await fetch(`${API_BASE}/menus/categories/${encodeURIComponent(trimmed)}`, {
+      const res = await fetch(`${getApiBase()}/menus/categories/${encodeURIComponent(trimmed)}`, {
         method: 'DELETE',
         headers: getHeaders('SELLER'),
       });
@@ -300,7 +311,7 @@ export const api = {
     customerName?: string
   ): Promise<Order> {
     try {
-      const res = await fetch(`${API_BASE}/orders`, {
+      const res = await fetch(`${getApiBase()}/orders`, {
         method: 'POST',
         headers: getHeaders('CUSTOMER'),
         body: JSON.stringify({ items, customerName }),
@@ -375,7 +386,7 @@ export const api = {
 
   async getOrders(role?: UserRole): Promise<Order[]> {
     try {
-      const res = await fetch(`${API_BASE}/orders`, {
+      const res = await fetch(`${getApiBase()}/orders`, {
         headers: getHeaders(role),
       });
       if (res.ok) {
@@ -393,7 +404,7 @@ export const api = {
 
   async getOrderById(id: number): Promise<Order> {
     try {
-      const res = await fetch(`${API_BASE}/orders/${id}`, {
+      const res = await fetch(`${getApiBase()}/orders/${id}`, {
         headers: getHeaders(),
       });
       if (res.ok) {
@@ -410,7 +421,7 @@ export const api = {
 
   async updateOrderStatus(id: number, status: string): Promise<Order> {
     try {
-      const res = await fetch(`${API_BASE}/orders/${id}/status`, {
+      const res = await fetch(`${getApiBase()}/orders/${id}/status`, {
         method: 'PATCH',
         headers: getHeaders('SELLER'),
         body: JSON.stringify({ status }),
@@ -447,7 +458,7 @@ export const api = {
 
   async deleteOrder(id: number): Promise<{ message: string }> {
     try {
-      const res = await fetch(`${API_BASE}/orders/${id}`, {
+      const res = await fetch(`${getApiBase()}/orders/${id}`, {
         method: 'DELETE',
         headers: getHeaders('SELLER'),
       });
@@ -467,7 +478,7 @@ export const api = {
 
   async clearAllOrders(): Promise<{ message: string }> {
     try {
-      const res = await fetch(`${API_BASE}/orders`, {
+      const res = await fetch(`${getApiBase()}/orders`, {
         method: 'DELETE',
         headers: getHeaders('SELLER'),
       });
@@ -486,7 +497,7 @@ export const api = {
   // Payment
   async confirmPayment(orderId: number, proofUrl?: string): Promise<any> {
     try {
-      const res = await fetch(`${API_BASE}/orders/${orderId}/payment/confirmation`, {
+      const res = await fetch(`${getApiBase()}/orders/${orderId}/payment/confirmation`, {
         method: 'POST',
         headers: getHeaders('CUSTOMER'),
         body: JSON.stringify({ proofUrl }),
@@ -512,7 +523,7 @@ export const api = {
 
   async decidePayment(orderId: number, action: 'APPROVE' | 'REJECT'): Promise<any> {
     try {
-      const res = await fetch(`${API_BASE}/orders/${orderId}/payment/decision`, {
+      const res = await fetch(`${getApiBase()}/orders/${orderId}/payment/decision`, {
         method: 'PATCH',
         headers: getHeaders('SELLER'),
         body: JSON.stringify({ action }),
@@ -560,7 +571,7 @@ export const api = {
   // Queue
   async getQueue(): Promise<QueueResponse> {
     try {
-      const res = await fetch(`${API_BASE}/queue`, {
+      const res = await fetch(`${getApiBase()}/queue`, {
         headers: getHeaders(),
       });
       if (res.ok) {
@@ -591,7 +602,7 @@ export const api = {
 
   async updateQueueStatus(id: number, status: string): Promise<any> {
     try {
-      const res = await fetch(`${API_BASE}/queue/${id}/status`, {
+      const res = await fetch(`${getApiBase()}/queue/${id}/status`, {
         method: 'PATCH',
         headers: getHeaders('SELLER'),
         body: JSON.stringify({ status }),

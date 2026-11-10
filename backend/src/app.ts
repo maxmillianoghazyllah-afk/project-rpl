@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
+import fs from 'fs';
 import routes from './routes';
 import { logger } from './utils/logger';
 
@@ -39,6 +41,20 @@ app.get('/api/health', (req, res) => {
 
 // API Routes
 app.use('/api', routes);
+
+// Serve Frontend Production Build (Mendukung akses mandiri & subpath /kantin)
+const frontendDistPath = path.resolve(__dirname, '../../frontend/dist');
+if (fs.existsSync(frontendDistPath)) {
+  app.use(express.static(frontendDistPath));
+  app.use('/kantin', express.static(frontendDistPath));
+
+  app.get('*', (req, res, next) => {
+    if (req.originalUrl.startsWith('/api')) {
+      return next();
+    }
+    res.sendFile(path.join(frontendDistPath, 'index.html'));
+  });
+}
 
 // 404 Handler
 app.use((req, res) => {
