@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+  # 1. Database MySQL 8.0
   mysql:
     image: mysql:8.0
     container_name: kantin_mysql
@@ -12,32 +13,52 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 10s
+      retries: 5
 
+  # 2. Backend API Express + Prisma
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: kantin_backend
     restart: always
-    ports:
-      - "5000:5000"
     environment:
       PORT: 5000
       DATABASE_URL: "mysql://root:@mysql:3306/kantin_queue"
       JWT_SECRET: "kantin-secret-token-key-2026"
+      CORS_ORIGIN: "*"
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
 
+  # 3. Frontend Web UI React (Built via Multi-Stage Nginx)
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: kantin_frontend
     restart: always
-    ports:
-      - "5173:5173"
     depends_on:
       - backend
+
+  # 4. Nginx Reverse Proxy & SSL (https://<ip>/kantin)
+  nginx:
+    image: nginx:alpine
+    container_name: kantin_nginx
+    restart: always
+    ports:
+      - "80:80"     # HTTP (Auto-redirect ke HTTPS)
+      - "443:443"   # HTTPS (SSL/TLS)
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - backend
+      - frontend
 
 volumes:
   mysql_data:
