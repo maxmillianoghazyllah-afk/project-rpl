@@ -17,15 +17,15 @@ export const getQueue = async (req: Request, res: Response) => {
       orderBy: { createdAt: 'asc' },
     });
 
-    const currentInProgress = queues.find((q) => q.status === 'IN_PROGRESS');
-    const lastReady = queues.filter((q) => q.status === 'READY').pop();
+    const currentInProgress = (queues as any[]).find((q: any) => q.status === 'IN_PROGRESS');
+    const lastReady = (queues as any[]).filter((q: any) => q.status === 'READY').pop();
 
     return res.json({
       queues,
       currentProcessingNumber: currentInProgress ? currentInProgress.queueNumber : (lastReady ? lastReady.queueNumber : '-'),
-      totalWaiting: queues.filter((q) => q.status === 'WAITING').length,
-      totalInProgress: queues.filter((q) => q.status === 'IN_PROGRESS').length,
-      totalReady: queues.filter((q) => q.status === 'READY').length,
+      totalWaiting: (queues as any[]).filter((q: any) => q.status === 'WAITING').length,
+      totalInProgress: (queues as any[]).filter((q: any) => q.status === 'IN_PROGRESS').length,
+      totalReady: (queues as any[]).filter((q: any) => q.status === 'READY').length,
     });
   } catch (error: any) {
     return res.status(500).json({ message: 'Gagal mengambil data antrean', error: error.message });
@@ -58,7 +58,7 @@ export const updateQueueStatus = async (req: AuthenticatedRequest, res: Response
       });
     }
 
-    const updatedQueue = await prisma.$transaction(async (tx) => {
+    const updatedQueue = await prisma.$transaction(async (tx: any) => {
       const queue = await tx.queue.update({
         where: { id },
         data: { status },

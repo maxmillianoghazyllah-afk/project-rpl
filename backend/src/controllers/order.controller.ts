@@ -49,7 +49,7 @@ export const createOrder = async (req: AuthenticatedRequest, res: Response) => {
     const calculation = processOrderItems(rawItems);
     const orderNumber = generateOrderNumber();
 
-    const order = await prisma.$transaction(async (tx) => {
+    const order = await prisma.$transaction(async (tx: any) => {
       const newOrder = await tx.order.create({
         data: {
           userId,
@@ -159,7 +159,7 @@ export const updateOrderStatus = async (req: AuthenticatedRequest, res: Response
       return res.status(400).json({ message: `Status tidak valid. Pilihan: ${validStatuses.join(', ')}` });
     }
 
-    const updatedOrder = await prisma.$transaction(async (tx) => {
+    const updatedOrder = await prisma.$transaction(async (tx: any) => {
       const order = await tx.order.update({
         where: { id },
         data: { status },
@@ -196,7 +196,7 @@ export const deleteOrder = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'ID pesanan tidak valid' });
     }
 
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: any) => {
       await tx.queue.deleteMany({ where: { orderId: id } });
       await tx.payment.deleteMany({ where: { orderId: id } });
       await tx.orderItem.deleteMany({ where: { orderId: id } });
@@ -211,7 +211,7 @@ export const deleteOrder = async (req: Request, res: Response) => {
 
 export const clearAllOrders = async (_req: Request, res: Response) => {
   try {
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: any) => {
       await tx.queue.deleteMany({});
       await tx.payment.deleteMany({});
       await tx.orderItem.deleteMany({});

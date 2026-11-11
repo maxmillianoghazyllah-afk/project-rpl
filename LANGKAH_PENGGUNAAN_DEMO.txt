@@ -1,0 +1,176 @@
+================================================================================
+          PANDUAN & SKENARIO REKAMAN DEMO APLIKASI MVP
+                 SISTEM ANTREAN KANTIN (KantinQueue)
+================================================================================
+
+File ini dirancang khusus sebagai panduan langkah demi langkah saat Anda 
+merekam layar (screen record) video demonstrasi tugas RPL (P7).
+
+--------------------------------------------------------------------------------
+A. PERSIAPAN SEBELUM RECORDING (CHECKLIST 1 MENIT)
+--------------------------------------------------------------------------------
+1. Pastikan Database & Server sudah menyala:
+   - MySQL XAMPP aktif (Port 3306)
+   - Backend API aktif di http://localhost:5000
+   - Frontend aktif di http://localhost:5173
+
+2. Buka Browser (Chrome / Edge) dan siapkan alur tab:
+   - TAB 1 (Mahasiswa) : http://localhost:5173
+   - TAB 2 (Penjual)   : http://localhost:5173/seller (memerlukan password penjual)
+   - TAB 3 (Display TV): http://localhost:5173/seller/display
+
+3. Siapkan 1 jendela Terminal / PowerShell di folder backend untuk 
+   memperlihatkan hasil Unit Test di akhir rekaman:
+   cd C:\Users\VIVOBOOK\Downloads\RPL\backend
+
+--------------------------------------------------------------------------------
+B. LANGKAH-LANGKAH REKAMAN & CONTOH NARASI (ACTION & SPEECH)
+--------------------------------------------------------------------------------
+
+[BAGIAN 1: PEMBUKAAN (0:00 - 0:30)]
+- Aksi: Buka TAB 1 (Halaman Menu Mahasiswa di http://localhost:5173).
+- Narasi yang bisa diucapkan:
+  "Halo, perkenalkan saya [Nama Anda]. Pada kesempatan kali ini saya akan
+   mendemonstrasikan aplikasi Sistem Antrean Kantin (KantinQueue) versi MVP
+   yang telah kami tuntaskan untuk memenuhi tugas Rekayasa Perangkat Lunak.
+   Aplikasi ini mengintegrasikan peran Mahasiswa pemesan, Penjual pengelola pesanan, 
+   serta Layar Monitor TV Kantin untuk panggilan antrean 3 kolom dan ketersediaan menu."
+
+
+[BAGIAN 2: MAHASISWA MEMILIH MENU & KERANJANG (0:30 - 1:15)]
+- Aksi:
+  1. Tunjukkan halaman katalog menu.
+  2. Klik tombol filter kategori: klik "Makanan", lalu "Minuman", lalu kembali ke "Semua".
+  3. Coba ketik di kolom pencarian: ketik "Goreng" -> menu otomatis tersaring.
+  4. Hapus teks pencarian.
+  5. Klik tombol "+ Tambah" pada "Nasi Goreng Spesial" (Rp 15.000).
+  6. Klik tombol "+ Tambah" pada "Es Teh Manis Jumbo" (Rp 4.000).
+  7. Klik tab "Keranjang" di navbar atas (terlihat badge angka 2).
+  8. Tunjukkan kolom 'Nama Pemesan *': ketikkan nama Anda (contoh: "Alex").
+     Jelaskan bahwa kolom nama ini fleksibel diisi oleh setiap mahasiswa secara mandiri.
+  9. Di halaman Keranjang, coba klik tombol "+" pada Es Teh Manis jadi 2 porsi.
+  10. Tunjukkan kalkulasi Subtotal dan Total Pembayaran terhitung otomatis secara presisi.
+- Narasi yang bisa diucapkan:
+  "Pertama, di sisi mahasiswa, pengguna dapat melihat daftar menu yang tersedia 
+   beserta harga dan kategorinya. Kita bisa menyaring menu berdasarkan kategori 
+   atau mencarinya lewat kolom pencarian. Di sini saya memilih 1 Nasi Goreng dan 
+   2 Es Teh Manis. Di halaman keranjang, mahasiswa mengisikan nama pemesannya sendiri 
+   dan total harga terkalkulasi otomatis secara real-time."
+
+
+[BAGIAN 3: CHECKOUT & PEMBAYARAN QRIS (1:15 - 2:00)]
+- Aksi:
+  1. Klik tombol "Lanjut Bayar QRIS".
+  2. Tunjukkan tampilan instruksi pembayaran: Muncul QR Code QRIS resmi, nomor pesanan 
+     (contoh: ORD-20261020-xxxx), dan total tagihan yang sesuai.
+  3. Tunjukkan bahwa proses konfirmasi sangat cepat dan bersih: mahasiswa cukup 
+     mengklik 1 tombol hijau "Saya Sudah Bayar (Konfirmasi)" tanpa perlu input catatan rumit.
+  4. Klik tombol biru "Pantau Status Antrean".
+  5. Tunjukkan bahwa status saat ini adalah: "Menunggu Verifikasi Pembayaran dari Penjual".
+- Narasi yang bisa diucapkan:
+  "Selanjutnya mahasiswa melakukan checkout. Sistem menerbitkan instruksi QRIS 
+   dengan total pembayaran yang presisi. Setelah mentransfer, mahasiswa cukup 
+   mengklik 1 kali tombol 'Saya Sudah Bayar' untuk mengonfirmasi secara instan. 
+   Sekarang status pesanan berada dalam tahap menunggu verifikasi dari pihak penjual."
+
+
+[BAGIAN 4: KEAMANAN PENJUAL, UNGGAH QRIS & APPROVAL (2:00 - 3:00)]
+- Aksi:
+  1. Klik tombol switch "Penjual" di pojok kanan atas navbar (atau buka tab http://localhost:5173/seller).
+  2. Perlihatkan adanya Pop-up Keamanan:
+     - Jika pertama kali: Muncul "Buat Password Penjual Baru".
+       Tunjukkan peringatan: "Harap catat password ini, tidak ada opsi lupa password".
+       Masukkan password (contoh: "kantin123") dan konfirmasi, lalu klik "Simpan & Masuk".
+     - Jika sudah pernah dibuat: Muncul "Verifikasi Akses Penjual",
+       masukkan password yang benar lalu klik "Buka Akses".
+  3. Tunjukkan fitur baru "Unggah QRIS Toko" di bar atas:
+     - Klik tombol "Unggah QRIS Toko", perlihatkan bahwa penjual bisa mengunggah file 
+       gambar QRIS resmi kantin (.png atau .jpg) yang langsung tayang pada layar mahasiswa!
+  4. Pada tab "Pesanan Masuk", tunjukkan pesanan mahasiswa tadi (status Menunggu Pembayaran).
+  5. Klik tombol hijau "Setujui Pembayaran".
+  6. Tunjukkan bahwa sistem langsung menerbitkan NOMOR ANTREAN resmi (misal: A-001) 
+     dan status pesanan otomatis berganti menjadi "Dikonfirmasi / Menunggu Dimasak".
+- Narasi yang bisa diucapkan:
+  "Untuk melindungi sisi operasional kantin agar tidak bisa diakses sembarang mahasiswa, 
+   sistem dilengkapi proteksi password penjual. Penjual juga dapat mengunggah gambar QRIS 
+   toko kustom format PNG atau JPG. Ketika penjual menerima transfer dan mengklik 
+   'Setujui Pembayaran', sistem otomatis menerbitkan nomor antrean sekuensial unik, yaitu A-001."
+
+
+[BAGIAN 5: PROSES MASAK & LAYAR DISPLAY MONITOR TV KANTIN (3:00 - 4:00)]
+- Aksi:
+  1. Di Dashboard Penjual, klik tombol "Mulai Siapkan / Masak Pesanan".
+     (Status pesanan berubah menjadi PREPARING / Sedang Disiapkan).
+  2. Buka tab "Layar Display Monitor" (URL: /seller/display).
+  3. Tunjukkan bahwa halaman ini dirancang fullscreen untuk monitor TV kantin dengan 3 Kolom:
+     - Kolom 1 (Kuning / Amber): BELUM DIMASAK
+     - Kolom 2 (Ungu / Indigo): SEDANG DISIAPKAN (Nomor A-001 berada di sini)
+     - Kolom 3 (Hijau / Emerald): SILAKAN AMBIL (SIAP)
+  4. Tunjukkan tombol mode di bar atas: Klik "Menu Tersedia", perlihatkan bahwa layar TV 
+     juga bisa menampilkan daftar menu yang Tersedia dan Habis untuk mahasiswa yang lewat.
+  5. Klik tombol "Split (Keduanya)" untuk menampilkan antrean dan ketersediaan menu berdampingan.
+  6. Kembalikan ke mode "Antrean".
+  7. Kembali ke tab Dashboard Penjual (/seller), klik "Tandai Siap Diambil di Konter".
+  8. Buka kembali Layar Display TV: Nomor A-001 langsung otomatis berpindah ke kolom hijau "SILAKAN AMBIL".
+- Narasi yang bisa diucapkan:
+  "Ketika koki mulai memasak, status diubah menjadi Sedang Disiapkan. 
+   Pada Layar Display Monitor yang dipasang di televisi konter kantin, 
+   terdapat 3 kolom status: Belum Dimasak, Sedang Disiapkan, dan Silakan Ambil. 
+   Layar ini juga dapat dialihkan ke mode Menu Tersedia. 
+   Setelah pesanan matang, penjual menandai pesanan siap diambil, dan pada layar display 
+   nomor antrean langsung berpindah ke kolom Silakan Ambil."
+
+
+[BAGIAN 6: MAHASISWA AMBIL PESANAN & PENGELOLAAN ANTREAN (4:00 - 4:40)]
+- Aksi:
+  1. Kembali ke tampilan Mahasiswa (klik tab Mahasiswa / URL http://localhost:5173/queue).
+  2. Tunjukkan status pesanan mahasiswa berubah hijau "Pesanan Siap Diambil di Konter!".
+  3. Kembali ke Dashboard Penjual, klik tombol "Pesanan Selesai Diambil Mahasiswa".
+  4. Tunjukkan fitur Pengelolaan & Pembersihan Antrean (Fitur Baru):
+     - Tunjukkan tombol ikon Tong Sampah pada kartu pesanan untuk menghapus antrean per item.
+     - Tunjukkan tombol merah "Bersihkan Semua Antrean" di bar atas: klik tombol ini untuk 
+       mengosongkan seluruh antrean yang sudah selesai agar antrean tidak menumpuk.
+- Narasi yang bisa diucapkan:
+  "Di layar mahasiswa, status juga otomatis terbarui memberi tahu bahwa makanan telah siap 
+   diambil di konter. Setelah diserahkan, penjual menandai pesanan selesai. 
+   Untuk menjaga antrean tetap rapi dan tidak menumpuk, penjual dapat menghapus antrean 
+   secara individual atau mengklik 'Bersihkan Semua Antrean' untuk mengosongkan antrean selesai."
+
+
+[BAGIAN 7: FITUR KELOLA MENU & GANTI PASSWORD (4:40 - 5:10)]
+- Aksi:
+  1. Di sisi Penjual, klik tab "Kelola Menu".
+  2. Tunjukkan tombol switch ketersediaan: Coba klik tombol "Tersedia" pada salah satu menu 
+     menjadi "Habis" -> status langsung berubah merah.
+  3. Tunjukkan tombol "Ganti Password": Klik tombol ganti password di pojok kanan atas, 
+     tunjukkan pop-up yang meminta password lama, password baru, dan konfirmasi.
+  4. Tunjukkan tombol "Kunci Mode": Klik kunci mode untuk kembali mengunci sisi penjual.
+- Narasi yang bisa diucapkan:
+  "Penjual juga memiliki kontrol penuh terhadap ketersediaan menu, misalnya mematikan menu 
+   yang habis agar mahasiswa tidak bisa memesannya. Selain itu, terdapat fitur Ganti Password 
+   serta Kunci Mode untuk mengamankan sistem saat penjual meninggalkan konter."
+
+
+[BAGIAN 8: BUKTI UNIT TEST & PENUTUP (5:10 - 5:40)]
+- Aksi:
+  1. Buka jendela Terminal / PowerShell di folder backend.
+  2. Jalankan perintah: npm test
+  3. Tunjukkan di layar bahwa SELURUH 5 file unit test (order, queue, payment, menu, auth) 
+     berhasil lulus 100% (ALL PASSED: 26 assertions).
+- Narasi yang bisa diucapkan:
+  "Sebagai bukti kualitas perangkat lunak, seluruh aturan bisnis inti telah diuji dengan 
+   5 file unit test yang mencakup logika pemesanan, antrean, pembayaran, menu, dan otentikasi. 
+   Seperti yang terlihat di terminal, seluruh pengujian berstatus ALL PASSED (100% lulus).
+   
+   Sekian demonstrasi MVP Sistem Antrean Kantin (KantinQueue). 
+   Terima kasih atas perhatiannya."
+
+--------------------------------------------------------------------------------
+C. TIPS TAMBAHAN
+--------------------------------------------------------------------------------
+1. URL Cepat untuk Browser Anda:
+   - Mahasiswa : http://localhost:5173/
+   - Penjual   : http://localhost:5173/seller (terproteksi password)
+   - Display TV: http://localhost:5173/seller/display (terproteksi password)
+2. Tekan tombol F11 pada browser saat membuka Layar Display TV untuk fullscreen mode layaknya TV kantin gantung!
+================================================================================

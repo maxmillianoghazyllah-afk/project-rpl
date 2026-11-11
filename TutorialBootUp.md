@@ -11,4 +11,4 @@ Untuk frontend, jalankan:
 cd C:[folder path directory \frontend]
 npm.cmd run dev
 
-Buka http://localhost:5173/
+direktori saya: C:\Users\VIVOBOOK\Downloads\RPL\backend, C:\Users\VIVOBOOK\Downloads\RPL\frontend
