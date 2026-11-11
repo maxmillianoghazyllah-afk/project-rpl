@@ -88,4 +88,14 @@ console.log('🧪 Menjalankan Unit Tests: Fitur 1 - Pemesanan & Kalkulasi Pesana
   console.log('  ✔ [PASS] generateOrderNumber menghasilkan format ORD-YYYYMMDD-XXXX');
 }
 
+// Test 8: Pemrosesan catatan pesanan khusus mahasiswa
+{
+  const inputWithNotes: MenuItemInput[] = [
+    { menuId: 1, name: 'Nasi Goreng', price: 15000, quantity: 1, isAvailable: true, notes: 'Jangan terlalu pedas, telur setengah matang' },
+  ];
+  const res = processOrderItems(inputWithNotes);
+  assert.equal(res.items[0].notes, 'Jangan terlalu pedas, telur setengah matang');
+  console.log('  ✔ [PASS] processOrderItems menyimpan catatan khusus pesanan mahasiswa dengan benar');
+}
+
 console.log('🎉 Seluruh Unit Test Fitur 1 (Order Service) BERHASIL LULUS!\n');

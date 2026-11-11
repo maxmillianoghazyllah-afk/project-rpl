@@ -59,7 +59,7 @@ export const decidePayment = async (req: AuthenticatedRequest, res: Response) =>
     const targetPaymentStatus: PaymentStatus = action === 'APPROVE' ? 'PAID' : 'REJECTED';
     const sellerId = req.user?.id || 2;
 
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: any) => {
       const order = await tx.order.findUnique({
         where: { id: orderId },
         include: { payment: true, queue: true },

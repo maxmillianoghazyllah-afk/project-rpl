@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, Utensils, AlertCircle } from 'lucide-react';
+import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, Utensils, AlertCircle, FileText } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { api } from '../services/api';
 import { Order } from '../types';
@@ -10,19 +10,33 @@ interface CartPageProps {
 }
 
 export const CartPage: React.FC<CartPageProps> = ({ onNavigateToMenu, onOrderCreated }) => {
-  const { items, updateQuantity, removeFromCart, clearCart, totalPrice, totalItems } = useCart();
-  const [customerName, setCustomerName] = useState('Budi Santoso');
+  const { items, updateQuantity, updateNotes, removeFromCart, clearCart, totalPrice, totalItems } = useCart();
+  // Selalu mulai dengan kolom nama kosong agar mahasiswa langsung mengetikkan nama sendiri
+  const [customerName, setCustomerName] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // States untuk pop-up konfirmasi hapus pesanan
+  const [deleteConfirmItem, setDeleteConfirmItem] = useState<{ id: number; name: string } | null>(null);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+
   const handleCheckout = async () => {
     if (items.length === 0) return;
+    if (!customerName.trim()) {
+      setError('Harap masukkan nama pemesan terlebih dahulu!');
+      return;
+    }
     try {
       setLoading(true);
       setError(null);
-      const payload = items.map((i) => ({ menuId: i.menu.id, quantity: i.quantity }));
-      const order = await api.createOrder(payload, customerName);
-      // Simpan order aktif dan arahkan ke pembayaran (cart disimpan sampai konfirmasi bayar)
+      localStorage.setItem('kantin_customer_name', customerName.trim());
+      const payload = items.map((i) => ({
+        menuId: i.menu.id,
+        quantity: i.quantity,
+        notes: i.notes?.trim() || undefined,
+      }));
+      const order = await api.createOrder(payload, customerName.trim());
+      clearCart();
       onOrderCreated(order);
     } catch (err: any) {
       setError(err.message || 'Gagal membuat pesanan');
@@ -56,13 +70,11 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigateToMenu, onOrderCre
       <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
         <div>
           <h1 className="text-2xl font-black text-gray-900">Keranjang Pesanan</h1>
-          <p className="text-xs text-gray-500 mt-0.5">
-            Periksa kembali item pesananmu sebelum melanjutkan ke pembayaran.
-          </p>
+          <p className="text-xs text-gray-500 mt-0.5">Periksa kembali item pesananmu sebelum melanjutkan ke pembayaran.</p>
         </div>
         <button
-          onClick={clearCart}
-          className="text-xs text-red-500 hover:text-red-700 font-semibold flex items-center gap-1"
+          onClick={() => setShowClearConfirm(true)}
+          className="text-xs text-red-500 hover:text-red-700 font-semibold flex items-center gap-1 p-1.5 rounded-lg hover:bg-red-50 transition"
         >
           <Trash2 className="w-3.5 h-3.5" /> Kosongkan
         </button>
@@ -78,56 +90,65 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigateToMenu, onOrderCre
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* Items List */}
         <div className="md:col-span-2 space-y-4">
-          {items.map(({ menu, quantity }) => (
+          {items.map(({ menu, quantity, notes }) => (
             <div
               key={menu.id}
-              className="bg-white rounded-2xl border border-gray-200 p-4 flex gap-4 items-center shadow-sm"
+              className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm hover:shadow-md transition"
             >
-              <img
-                src={
-                  menu.imageUrl ||
-                  'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80'
-                }
-                alt={menu.name}
-                className="w-20 h-20 rounded-xl object-cover bg-gray-100 flex-shrink-0"
-              />
-              <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-gray-900 text-sm truncate">{menu.name}</h3>
-                <p className="text-xs text-brand-600 font-bold mt-0.5">
-                  Rp {menu.price.toLocaleString('id-ID')}
-                </p>
-                <p className="text-[11px] text-gray-400 mt-1">
-                  Subtotal:{' '}
-                  <span className="font-semibold text-gray-700">
-                    Rp {(menu.price * quantity).toLocaleString('id-ID')}
-                  </span>
-                </p>
+              <div className="flex gap-4 items-center">
+                <img
+                  src={menu.imageUrl || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80'}
+                  alt={menu.name}
+                  className="w-20 h-20 rounded-xl object-cover bg-gray-100 flex-shrink-0"
+                />
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-gray-900 text-sm truncate">{menu.name}</h3>
+                  <p className="text-xs text-brand-600 font-bold mt-0.5">
+                    Rp {menu.price.toLocaleString('id-ID')}
+                  </p>
+                  <p className="text-[11px] text-gray-400 mt-1">
+                    Subtotal: <span className="font-semibold text-gray-700">Rp {(menu.price * quantity).toLocaleString('id-ID')}</span>
+                  </p>
+                </div>
+
+                {/* Counter Controls */}
+                <div className="flex items-center gap-2 bg-gray-50 p-1.5 rounded-xl border border-gray-200">
+                  <button
+                    onClick={() => updateQuantity(menu.id, -1)}
+                    className="w-7 h-7 bg-white rounded-lg flex items-center justify-center text-gray-600 hover:text-gray-900 shadow-sm border border-gray-100 active:scale-95"
+                  >
+                    <Minus className="w-3.5 h-3.5" />
+                  </button>
+                  <span className="w-6 text-center text-xs font-bold text-gray-900">{quantity}</span>
+                  <button
+                    onClick={() => updateQuantity(menu.id, 1)}
+                    className="w-7 h-7 bg-white rounded-lg flex items-center justify-center text-gray-600 hover:text-gray-900 shadow-sm border border-gray-100 active:scale-95"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                {/* Remove button dengan pop up konfirmasi */}
+                <button
+                  onClick={() => setDeleteConfirmItem({ id: menu.id, name: menu.name })}
+                  className="text-gray-400 hover:text-red-500 p-2 rounded-lg hover:bg-red-50 transition"
+                  title="Hapus pesanan ini"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
 
-              {/* Counter Controls */}
-              <div className="flex items-center gap-2 bg-gray-50 p-1.5 rounded-xl border border-gray-200">
-                <button
-                  onClick={() => updateQuantity(menu.id, -1)}
-                  className="w-7 h-7 bg-white rounded-lg flex items-center justify-center text-gray-600 hover:text-gray-900 shadow-sm border border-gray-100 active:scale-95"
-                >
-                  <Minus className="w-3.5 h-3.5" />
-                </button>
-                <span className="w-6 text-center text-xs font-bold text-gray-900">{quantity}</span>
-                <button
-                  onClick={() => updateQuantity(menu.id, 1)}
-                  className="w-7 h-7 bg-white rounded-lg flex items-center justify-center text-gray-600 hover:text-gray-900 shadow-sm border border-gray-100 active:scale-95"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                </button>
+              {/* Opsi Catatan Pemesanan (Mahasiswa bisa menambahkan catatan khusus) */}
+              <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-2">
+                <FileText className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                <input
+                  type="text"
+                  value={notes || ''}
+                  onChange={(e) => updateNotes(menu.id, e.target.value)}
+                  placeholder="Tambah catatan pesanan (contoh: Tidak pedas, es sedikit, pisah sambal)..."
+                  className="flex-1 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-800 placeholder-gray-400 focus:bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none transition"
+                />
               </div>
-
-              {/* Remove button */}
-              <button
-                onClick={() => removeFromCart(menu.id)}
-                className="text-gray-400 hover:text-red-500 p-1.5 transition"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
             </div>
           ))}
         </div>
@@ -141,22 +162,23 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigateToMenu, onOrderCre
 
             {/* Nama Pemesan */}
             <div className="mb-4">
-              <label className="block text-xs font-semibold text-gray-700 mb-1">Nama Pemesan</label>
+              <label className="block text-xs font-bold text-gray-700 mb-1">
+                Nama Pemesan <span className="text-red-500">*</span>
+              </label>
               <input
                 type="text"
+                required
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
-                placeholder="Masukkan nama Anda..."
-                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                placeholder="Ketik nama Anda (contoh: Alex, Sinta)..."
+                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-brand-500 focus:outline-none"
               />
             </div>
 
             <div className="space-y-2 text-xs text-gray-600 pb-4 border-b border-gray-100">
               <div className="flex justify-between">
                 <span>Total Item ({totalItems})</span>
-                <span className="font-semibold text-gray-900">
-                  Rp {totalPrice.toLocaleString('id-ID')}
-                </span>
+                <span className="font-semibold text-gray-900">Rp {totalPrice.toLocaleString('id-ID')}</span>
               </div>
               <div className="flex justify-between">
                 <span>Biaya Layanan Antrean</span>
@@ -191,6 +213,74 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigateToMenu, onOrderCre
           </div>
         </div>
       </div>
+
+      {/* Pop-up Dialog Konfirmasi Hapus Pesanan Tunggal */}
+      {deleteConfirmItem && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-gray-100 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mx-auto mb-3 shadow-sm">
+              <Trash2 className="w-7 h-7" />
+            </div>
+            <h3 className="text-base font-extrabold text-gray-900 mb-1">Yakin ingin menghapus pesanan?</h3>
+            <p className="text-xs text-gray-500 mb-6">
+              Pesanan <strong className="text-gray-800">"{deleteConfirmItem.name}"</strong> akan dihapus dari daftar keranjang belanja Anda.
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmItem(null)}
+                className="flex-1 py-2.5 px-3 border border-gray-200 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100 transition"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  removeFromCart(deleteConfirmItem.id);
+                  setDeleteConfirmItem(null);
+                }}
+                className="flex-1 py-2.5 px-3 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold shadow-md shadow-red-500/20 transition"
+              >
+                Ya, Hapus
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pop-up Dialog Konfirmasi Kosongkan Seluruh Keranjang */}
+      {showClearConfirm && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-gray-100 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mx-auto mb-3 shadow-sm">
+              <Trash2 className="w-7 h-7" />
+            </div>
+            <h3 className="text-base font-extrabold text-gray-900 mb-1">Yakin ingin menghapus semua pesanan?</h3>
+            <p className="text-xs text-gray-500 mb-6">
+              Seluruh item yang ada di keranjang Anda akan dibersihkan.
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowClearConfirm(false)}
+                className="flex-1 py-2.5 px-3 border border-gray-200 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100 transition"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  clearCart();
+                  setShowClearConfirm(false);
+                }}
+                className="flex-1 py-2.5 px-3 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold shadow-md shadow-red-500/20 transition"
+              >
+                Ya, Kosongkan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

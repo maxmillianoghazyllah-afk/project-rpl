@@ -1,6 +1,6 @@
 # Panduan Menjalankan Aplikasi (HowToRun.md)
 
-**Aplikasi:** Sistem Antrean Kantin (KantinQueue) - MVP Final Version (P7)  
+**Aplikasi:** Sistem Antrean Kantin (KantinQueue) - MVP Version 1  
 **Mata Kuliah:** Rekayasa Perangkat Lunak (RPL)  
 **Teknologi:** React 18, TypeScript, Vite, Tailwind CSS, Node.js, Express, Prisma ORM, MySQL.
 
@@ -106,6 +106,7 @@ npm test
   ✔ [PASS] validateMenuData membatasi kategori hanya Makanan, Minuman, atau Camilan
   ✔ [PASS] determineMenuDeletionStrategy melindungi integritas riwayat pesanan
   ✔ [PASS] filterMenuList menyaring kategori, pencarian, dan stok secara presisi
+  ✔ [PASS] registerCategory & unregisterCategory mengelola kategori kustom & melindungi kategori permanen
 🎉 Seluruh Unit Test Manajemen Menu BERHASIL LULUS!
 
 🧪 Menjalankan Unit Tests: Autentikasi & Hak Akses Pengguna (auth.test.ts)...
@@ -115,8 +116,15 @@ npm test
   ✔ [PASS] hasSellerPrivilege membatasi akses khusus penjual kantin
 🎉 Seluruh Unit Test Autentikasi & Hak Akses BERHASIL LULUS!
 
+🧪 Menjalankan Unit Tests: Keamanan Sistem & Safe Logging (security.test.ts)...
+  ✔ [PASS] maskSensitiveData menyamarkan password, hash, dan token otentikasi secara rekursif
+  ✔ [PASS] maskSensitiveData menyamarkan token pada header Authorization
+  ✔ [PASS] formatLogEntry menghasilkan log terstruktur dan bebas dari kebocoran kredensial
+  ✔ [PASS] Input catatan pesanan diperlakukan sebagai literal text untuk mencegah eksekusi skrip
+🎉 Seluruh Unit Test Keamanan & Safe Logging BERHASIL LULUS!
+
 ================================================================
-✅ SELURUH 5 UNIT TEST FILES FITUR INTI MVP 1 BERHASIL LULUS (ALL PASSED)
+✅ SELURUH 6 UNIT TEST FILES FITUR INTI & KEAMANAN P8 BERHASIL LULUS (ALL PASSED)
 ================================================================
 ```
 
@@ -151,37 +159,39 @@ Buka browser Anda ke **`http://localhost:5173`**:
 1. **Pilih Menu**:
    - Telusuri menu kantin, coba gunakan filter kategori (**Semua**, **Makanan**, **Minuman**) atau kolom pencarian (misal: ketik "Goreng").
    - Klik tombol **+ Tambah** pada menu *Nasi Goreng Spesial* (Rp 15.000) dan *Es Teh Manis Jumbo* (Rp 4.000).
-2. **Review Keranjang (Persistensi Data)**:
+2. **Review Keranjang & Isi Nama Pemesan**:
    - Klik tab **Keranjang** di navbar atas.
-   - Pilihan menu tersimpan stabil dan tidak hilang saat Anda berpindah tab.
+   - Masukkan nama Anda pada kolom **Nama Pemesan** (contoh: Alex / Sinta).
    - Ubah jumlah porsi menggunakan tombol `+` atau `-`. Periksa total harga yang terkalkulasi otomatis.
    - Klik tombol **Lanjut Bayar QRIS**.
-3. **Pembayaran QRIS & Konfirmasi**:
-   - Perhatikan tampilan kartu resmi QRIS kantin dengan total tagihan yang sesuai (menampilkan foto QR Code toko dari penjual tanpa NMID).
-   - Masukkan catatan/link bukti transfer opsional, lalu klik **Saya Sudah Bayar (Konfirmasi)**.
+3. **Pembayaran QRIS & Konfirmasi 1-Klik**:
+   - Perhatikan tampilan kartu resmi QRIS kantin dengan total tagihan yang sesuai (mendukung gambar QRIS toko yang diunggah penjual).
+   - Klik tombol hijau **Saya Sudah Bayar (Konfirmasi)** (konfirmasi langsung 1-klik tanpa perlu mengisi catatan/link bukti transfer).
    - Klik **Pantau Status Antrean** untuk diarahkan ke layar pemantau antrean mahasiswa.
 
-### Skenario B: Alur Penjual (Keamanan Password, Unggah QR, & Dapur)
-1. **Beralih ke Mode Penjual & Pop-up Password**:
-   - Di sudut kanan atas navbar, klik tombol switch **Penjual**.
-   - Sistem akan memunculkan pop-up pembuatan password penjual (pertama kali) atau input password penjual.
-   - Harap catat password tersebut karena tidak ada fitur lupa password.
-2. **Pengaturan Foto QR Code Toko**:
-   - Pada kartu "QR Code Pembayaran Kantin", penjual dapat mengunggah foto QR Code sendiri dalam format `.jpg` atau `.png`.
-   - Gambar ini otomatis tersimpan dan digunakan mahasiswa saat membayar.
-3. **Persetujuan Pembayaran**:
+### Skenario B: Alur Penjual (Approval Bayar, Manajemen Antrean, & Display TV)
+1. **Beralih ke Mode Penjual & Verifikasi Password**:
+   - Di sudut kanan atas navbar, klik tombol switch **Penjual** (atau buka URL `http://localhost:5173/seller`).
+   - Masukkan password penjual pada pop-up keamanan (jika pertama kali, buat password baru dan catat dengan baik).
+2. **Unggah QRIS Toko Kustom (Opsional)**:
+   - Klik tombol **Unggah QRIS Toko** di bar atas dashboard.
+   - Pilih file gambar QRIS resmi kantin Anda (.png atau .jpg). Gambar ini langsung tampil pada layar pembayaran QRIS mahasiswa.
+3. **Persetujuan Pembayaran & Penomoran Antrean**:
    - Pada tab **Pesanan Masuk**, cari pesanan mahasiswa yang baru masuk (berstatus *WAITING_PAYMENT*).
    - Klik tombol **Setujui Pembayaran**.
    - Sistem akan otomatis mengubah status pembayaran menjadi `PAID`, pesanan menjadi `CONFIRMED`, dan **menerbitkan nomor antrean sekuensial (misal: `A-001`)**.
-4. **Pemrosesan Dapur**:
-   - Klik tombol **Mulai Siapkan / Masak Pesanan** (status berubah menjadi `PREPARING` / `IN_PROGRESS`).
-   - Setelah makanan matang, klik **Tandai Siap Diambil di Konter** (status berubah menjadi `READY`).
-   - Begitu mahasiswa mengambil pesanannya di konter, klik **Pesanan Selesai Diambil** (status `COMPLETED`).
-5. **Layar Display Monitor TV Multi-Mode**:
-   - Klik tab **Layar Display Monitor** di navbar penjual (atau buka `http://localhost:5173/seller/display`).
-   - Pilih mode tampilan: **Monitor Antrean**, **Ketersediaan Menu** (info menu *Tersedia* vs *Habis*), atau **Layar Bersama (Split)**.
-6. **Kembali ke Mahasiswa**:
-   - Cukup klik tombol tab **Mahasiswa** di pojok kanan atas navbar untuk kembali ke mode pembeli.
+4. **Layar Display Monitor Panggilan Antrean 3 Kolom**:
+   - Buka tab **Layar Display Monitor** (`http://localhost:5173/seller/display`).
+   - Amati tampilan papan TV 3 kolom:
+     - **Kolom 1 (Kuning): Belum Dimasak** (nomor antrean mahasiswa yang baru disetujui).
+     - **Kolom 2 (Ungu): Sedang Disiapkan** (setelah koki klik *Mulai Masak*).
+     - **Kolom 3 (Hijau): Silakan Ambil** (setelah pesanan matang dan siap diambil di konter).
+   - Terdapat juga tombol **Menu Tersedia** untuk menampilkan menu yang Tersedia vs Habis.
+5. **Pembersihan & Penghapusan Antrean (Mencegah Antrean Menumpuk)**:
+   - Penjual dapat menghapus antrean pesanan secara individual menggunakan ikon **Tong Sampah** pada setiap kartu pesanan.
+   - Penjual juga dapat mengklik tombol **Bersihkan Semua Antrean** di bar atas untuk mengosongkan seluruh antrean selesai sekaligus agar daftar antrean tidak menumpuk.
+6. **Kelola Menu**:
+   - Klik tab **Kelola Menu** untuk menambah menu baru atau mematikan switch ketersediaan (*Tersedia* $\rightarrow$ *Habis*).
 
 ---
 

@@ -1,5 +1,5 @@
 /**
- * Service Layer: Logika Bisnis Pengelolaan Menu Kantin (User Story 1)
+ * Service Layer: Logika Bisnis Pengelolaan Menu & Kategori Kantin (User Story 1 & P8)
  */
 
 export interface MenuDataInput {
@@ -9,12 +9,68 @@ export interface MenuDataInput {
   description?: string;
 }
 
-export const VALID_CATEGORIES = ['Makanan', 'Minuman', 'Camilan'];
+export const DEFAULT_PERMANENT_CATEGORIES = ['Makanan', 'Minuman'];
+export const DEFAULT_CATEGORIES = ['Makanan', 'Minuman', 'Camilan'];
+export const VALID_CATEGORIES = DEFAULT_CATEGORIES;
+
+let registeredCategories: string[] = [...DEFAULT_CATEGORIES];
+
+/**
+ * Mendapatkan seluruh daftar kategori aktif.
+ */
+export function getRegisteredCategories(): string[] {
+  return [...registeredCategories];
+}
+
+/**
+ * Mendaftarkan kategori menu baru oleh penjual.
+ */
+export function registerCategory(categoryName: string): string[] {
+  const trimmed = categoryName?.trim();
+  if (!trimmed) {
+    throw new Error('Nama kategori tidak boleh kosong');
+  }
+  const exists = registeredCategories.some((c) => c.toLowerCase() === trimmed.toLowerCase());
+  if (exists) {
+    throw new Error(`Kategori "${trimmed}" sudah terdaftar`);
+  }
+  registeredCategories.push(trimmed);
+  return [...registeredCategories];
+}
+
+/**
+ * Menghapus kategori menu (Kategori Makanan dan Minuman dilindungi dan tidak dapat dihapus).
+ */
+export function unregisterCategory(categoryName: string): string[] {
+  const trimmed = categoryName?.trim();
+  if (!trimmed) {
+    throw new Error('Nama kategori tidak boleh kosong');
+  }
+  if (DEFAULT_PERMANENT_CATEGORIES.some((c) => c.toLowerCase() === trimmed.toLowerCase())) {
+    throw new Error(`Kategori wajib "${trimmed}" tidak dapat dihapus`);
+  }
+  const index = registeredCategories.findIndex((c) => c.toLowerCase() === trimmed.toLowerCase());
+  if (index === -1) {
+    throw new Error(`Kategori "${trimmed}" tidak ditemukan`);
+  }
+  registeredCategories.splice(index, 1);
+  return [...registeredCategories];
+}
+
+/**
+ * Reset kategori ke default (untuk keperluan testing).
+ */
+export function resetCategoriesToDefault(): void {
+  registeredCategories = [...DEFAULT_CATEGORIES];
+}
 
 /**
  * Validasi input data menu baru atau perubahan menu.
  */
-export function validateMenuData(input: MenuDataInput): { valid: boolean; normalizedCategory: string } {
+export function validateMenuData(
+  input: MenuDataInput,
+  allowedCategories: string[] = registeredCategories
+): { valid: boolean; normalizedCategory: string } {
   if (!input.name || input.name.trim().length === 0) {
     throw new Error('Nama menu makanan/minuman tidak boleh kosong');
   }
@@ -30,10 +86,11 @@ export function validateMenuData(input: MenuDataInput): { valid: boolean; normal
   let normalizedCategory = 'Makanan';
   if (input.category && input.category.trim().length > 0) {
     const trimmed = input.category.trim();
-    if (!VALID_CATEGORIES.includes(trimmed)) {
-      throw new Error(`Kategori "${trimmed}" tidak valid. Pilihan: ${VALID_CATEGORIES.join(', ')}`);
+    const matched = allowedCategories.find((c) => c.toLowerCase() === trimmed.toLowerCase());
+    if (!matched) {
+      throw new Error(`Kategori "${trimmed}" tidak valid. Pilihan: ${allowedCategories.join(', ')}`);
     }
-    normalizedCategory = trimmed;
+    normalizedCategory = matched;
   }
 
   return { valid: true, normalizedCategory };
@@ -66,7 +123,11 @@ export function filterMenuList<T extends { name: string; category?: string; desc
 
     if (categoryFilter && categoryFilter !== 'Semua') {
       const menuCat = menu.category || 'Makanan';
-      if (menuCat.toLowerCase() !== categoryFilter.toLowerCase()) {
+      if (categoryFilter === 'Lainnya') {
+        const isFood = menuCat.toLowerCase() === 'makanan';
+        const isDrink = menuCat.toLowerCase() === 'minuman';
+        if (isFood || isDrink) return false;
+      } else if (menuCat.toLowerCase() !== categoryFilter.toLowerCase()) {
         return false;
       }
     }

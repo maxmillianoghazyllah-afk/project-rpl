@@ -1,428 +1,289 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Lock,
-  KeyRound,
-  Eye,
-  EyeOff,
-  AlertTriangle,
-  CheckCircle2,
-  X,
-  ShieldCheck,
-  ShieldAlert,
-} from 'lucide-react';
+import React, { useState } from 'react';
+import { Lock, ShieldAlert, KeyRound, Check, X, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 
-export type AuthModalMode = 'CREATE' | 'LOGIN' | 'CHANGE_PASSWORD';
+export type AuthModalMode = 'SETUP' | 'VERIFY' | 'CHANGE_PASSWORD';
 
 interface SellerAuthModalProps {
   isOpen: boolean;
   mode: AuthModalMode;
-  onSuccess: () => void;
   onClose: () => void;
+  onSuccess: () => void;
 }
 
 export const SellerAuthModal: React.FC<SellerAuthModalProps> = ({
   isOpen,
-  mode: initialMode,
-  onSuccess,
+  mode,
   onClose,
+  onSuccess,
 }) => {
-  const [mode, setMode] = useState<AuthModalMode>(initialMode);
-  const [oldPassword, setOldPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
+  const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-
-  const [showOld, setShowOld] = useState(false);
-  const [showNew, setShowNew] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [showLogin, setShowLogin] = useState(false);
-
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMode(initialMode);
-    resetForm();
-  }, [initialMode, isOpen]);
-
-  const resetForm = () => {
-    setOldPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
-    setLoginPassword('');
-    setErrorMessage(null);
-    setSuccessMessage(null);
-  };
+  const [oldPassword, setOldPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  const handleCreatePassword = (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMessage(null);
-
-    if (!newPassword || newPassword.trim().length < 4) {
-      setErrorMessage('Password minimal harus terdiri dari 4 karakter.');
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setErrorMessage('Konfirmasi password tidak cocok! Silakan periksa kembali.');
-      return;
-    }
-
-    // Simpan password di localStorage
-    localStorage.setItem('kantin_seller_password', newPassword.trim());
-    sessionStorage.setItem('kantin_seller_session', 'true');
-
-    setSuccessMessage('Password penjual berhasil dibuat dan disimpan!');
-    setTimeout(() => {
-      resetForm();
-      onSuccess();
-    }, 900);
+  const handleReset = () => {
+    setPassword('');
+    setConfirmPassword('');
+    setOldPassword('');
+    setError(null);
+    setSuccessMsg(null);
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMessage(null);
+    setError(null);
 
-    const savedPassword = localStorage.getItem('kantin_seller_password');
-    if (!savedPassword) {
-      // Belum ada password, alihkan ke mode buat password
-      setMode('CREATE');
+    const storedPassword = localStorage.getItem('kantin_seller_password');
+
+    // 1. SETUP (Pertama Kali: Buat Password Baru)
+    if (mode === 'SETUP') {
+      if (!password || password.length < 4) {
+        setError('Password minimal harus 4 karakter!');
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError('Konfirmasi password tidak cocok! Pastikan kedua kolom sama.');
+        return;
+      }
+
+      localStorage.setItem('kantin_seller_password', password);
+      sessionStorage.setItem('kantin_seller_session', 'true');
+      setSuccessMsg('Password berhasil dibuat! Akses penjual terbuka.');
+      setTimeout(() => {
+        handleReset();
+        onSuccess();
+      }, 700);
       return;
     }
 
-    if (loginPassword.trim() !== savedPassword) {
-      setErrorMessage('Password salah! Akses khusus penjual ditolak.');
-      return;
-    }
+    // 2. VERIFY (Login Masuk Mode Penjual)
+    if (mode === 'VERIFY') {
+      if (!password) {
+        setError('Silakan masukkan password penjual!');
+        return;
+      }
+      if (password !== storedPassword) {
+        setError('Password salah! Akses ditolak. Harap periksa kembali password yang Anda catat.');
+        return;
+      }
 
-    // Set sesi penjual aktif
-    sessionStorage.setItem('kantin_seller_session', 'true');
-    setSuccessMessage('Password benar! Membuka akses penjual...');
-    setTimeout(() => {
-      resetForm();
+      sessionStorage.setItem('kantin_seller_session', 'true');
+      handleReset();
       onSuccess();
-    }, 600);
-  };
-
-  const handleChangePassword = (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMessage(null);
-
-    const savedPassword = localStorage.getItem('kantin_seller_password');
-
-    if (oldPassword.trim() !== savedPassword) {
-      setErrorMessage('Password lama yang Anda masukkan tidak sesuai.');
       return;
     }
 
-    if (!newPassword || newPassword.trim().length < 4) {
-      setErrorMessage('Password baru minimal harus terdiri dari 4 karakter.');
-      return;
+    // 3. CHANGE_PASSWORD (Ganti Password Penjual)
+    if (mode === 'CHANGE_PASSWORD') {
+      if (!oldPassword) {
+        setError('Silakan masukkan password lama Anda!');
+        return;
+      }
+      if (oldPassword !== storedPassword) {
+        setError('Password lama yang Anda masukkan salah!');
+        return;
+      }
+      if (!password || password.length < 4) {
+        setError('Password baru minimal harus 4 karakter!');
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError('Konfirmasi password baru tidak cocok!');
+        return;
+      }
+      if (password === oldPassword) {
+        setError('Password baru tidak boleh sama persis dengan password lama.');
+        return;
+      }
+
+      localStorage.setItem('kantin_seller_password', password);
+      setSuccessMsg('Password penjual berhasil diubah! Harap catat password baru ini.');
+      setTimeout(() => {
+        handleReset();
+        onSuccess();
+        onClose();
+      }, 1000);
     }
-
-    if (newPassword === oldPassword) {
-      setErrorMessage('Password baru tidak boleh sama dengan password lama.');
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setErrorMessage('Konfirmasi password baru tidak cocok.');
-      return;
-    }
-
-    localStorage.setItem('kantin_seller_password', newPassword.trim());
-    setSuccessMessage('Password penjual berhasil diperbarui! Harap catat password baru Anda.');
-
-    setTimeout(() => {
-      resetForm();
-      onSuccess();
-    }, 1200);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-950/70 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-gray-100 overflow-hidden transform transition-all">
-        {/* Header Modal */}
-        <div className="bg-gradient-to-r from-emerald-600 to-teal-700 px-6 py-5 text-white flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-md">
-              {mode === 'CREATE' ? (
-                <KeyRound className="w-5 h-5 text-amber-200" />
-              ) : mode === 'LOGIN' ? (
-                <Lock className="w-5 h-5 text-emerald-200" />
-              ) : (
-                <ShieldCheck className="w-5 h-5 text-teal-200" />
-              )}
-            </div>
-            <div>
-              <h2 className="text-lg font-black tracking-tight leading-tight">
-                {mode === 'CREATE'
-                  ? 'Buat Password Penjual'
-                  : mode === 'LOGIN'
-                  ? 'Akses Khusus Penjual'
-                  : 'Ganti Password Penjual'}
-              </h2>
-              <p className="text-xs text-white/80">
-                {mode === 'CREATE'
-                  ? 'Inisialisasi keamanan konter kantin'
-                  : mode === 'LOGIN'
-                  ? 'Otentikasi keamanan kasir & dapur'
-                  : 'Pembaruan kata sandi penjual'}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition"
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+      <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-gray-100 relative">
+        {/* Close Button */}
+        <button
+          onClick={() => {
+            handleReset();
+            onClose();
+          }}
+          className="absolute top-5 right-5 text-gray-400 hover:text-gray-700 p-1.5 rounded-full hover:bg-gray-100 transition"
+          title="Tutup & Batalkan"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        {/* Modal Header */}
+        <div className="flex items-center gap-3.5 mb-5 pb-4 border-b border-gray-100">
+          <div
+            className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-md ${
+              mode === 'SETUP'
+                ? 'bg-amber-600 shadow-amber-500/20'
+                : mode === 'CHANGE_PASSWORD'
+                ? 'bg-blue-600 shadow-blue-500/20'
+                : 'bg-emerald-600 shadow-emerald-500/20'
+            }`}
           >
-            <X className="w-4 h-4" />
-          </button>
+            {mode === 'SETUP' ? (
+              <ShieldAlert className="w-6 h-6" />
+            ) : mode === 'CHANGE_PASSWORD' ? (
+              <KeyRound className="w-6 h-6" />
+            ) : (
+              <Lock className="w-6 h-6" />
+            )}
+          </div>
+          <div>
+            <h2 className="text-lg font-black text-gray-900 tracking-tight">
+              {mode === 'SETUP' && 'Buat Password Penjual Baru'}
+              {mode === 'VERIFY' && 'Verifikasi Akses Penjual'}
+              {mode === 'CHANGE_PASSWORD' && 'Ganti Password Penjual'}
+            </h2>
+            <p className="text-xs text-gray-500 font-medium">
+              {mode === 'SETUP' && 'Atur password pertama kali untuk mengamankan konter'}
+              {mode === 'VERIFY' && 'Area khusus staf kantin & layar monitor display'}
+              {mode === 'CHANGE_PASSWORD' && 'Perbarui kata sandi operasional kantin Anda'}
+            </p>
+          </div>
         </div>
 
-        {/* Content Body */}
-        <div className="p-6">
-          {/* Peringatan Kritis: TIDAK ADA OPSI LUPA PASSWORD */}
-          <div className="mb-5 bg-amber-50 border-l-4 border-amber-500 p-3.5 rounded-r-xl">
-            <div className="flex gap-2.5 items-start">
-              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-              <div className="text-xs text-amber-900 leading-relaxed">
-                <span className="font-bold block uppercase tracking-wide text-amber-800 mb-0.5">
-                  Penting & Wajib Dicatat!
-                </span>
-                Harap simpan dan catat password ini baik-baik. Sistem{' '}
-                <span className="font-bold underline">TIDAK memiliki opsi Lupa Password</span> demi
-                menjamin keamanan data transaksi kantin dari akses mahasiswa/umum.
-              </div>
+        {/* Important Alert Notice */}
+        {mode === 'SETUP' && (
+          <div className="mb-5 p-3.5 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-2.5 text-xs text-amber-900">
+            <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <strong className="font-bold block text-amber-950 mb-0.5">
+                PENTING: Harap Catat Password Ini!
+              </strong>
+              Sistem tidak menyediakan opsi <em>Lupa Password</em> demi menjaga integritas dan keamanan konter kantin. Pastikan Anda mengingat atau mencatatnya.
+            </div>
+          </div>
+        )}
+
+        {mode === 'VERIFY' && (
+          <div className="mb-5 p-3 bg-gray-50 border border-gray-200 rounded-2xl text-xs text-gray-600">
+            Halaman ini dan Layar Display TV dilindungi. Masukkan password yang telah Anda buat untuk melanjutkan.
+          </div>
+        )}
+
+        {/* Error / Success Messages */}
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-2xl text-xs text-red-700 font-semibold flex items-center gap-2">
+            <X className="w-4 h-4 flex-shrink-0" />
+            {error}
+          </div>
+        )}
+        {successMsg && (
+          <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs text-emerald-700 font-semibold flex items-center gap-2">
+            <Check className="w-4 h-4 flex-shrink-0" />
+            {successMsg}
+          </div>
+        )}
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Old Password (only in CHANGE_PASSWORD mode) */}
+          {mode === 'CHANGE_PASSWORD' && (
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">
+                Password Lama
+              </label>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                value={oldPassword}
+                onChange={(e) => setOldPassword(e.target.value)}
+                placeholder="Masukkan password saat ini"
+                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-blue-500 focus:outline-none bg-gray-50/50"
+              />
+            </div>
+          )}
+
+          {/* Password Input */}
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1">
+              {mode === 'CHANGE_PASSWORD'
+                ? 'Password Baru'
+                : mode === 'SETUP'
+                ? 'Buat Password Baru'
+                : 'Password Penjual'}
+            </label>
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder={mode === 'VERIFY' ? 'Masukkan password Anda' : 'Minimal 4 karakter'}
+                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-emerald-500 focus:outline-none pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
           </div>
 
-          {/* Feedback Messages */}
-          {errorMessage && (
-            <div className="mb-4 bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-xl text-xs font-semibold flex items-center gap-2">
-              <ShieldAlert className="w-4 h-4 text-rose-600 flex-shrink-0" />
-              <span>{errorMessage}</span>
+          {/* Confirm Password (in SETUP & CHANGE_PASSWORD) */}
+          {(mode === 'SETUP' || mode === 'CHANGE_PASSWORD') && (
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">
+                Konfirmasi Password {mode === 'CHANGE_PASSWORD' ? 'Baru' : ''}
+              </label>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Ketik ulang password yang sama"
+                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              />
             </div>
           )}
 
-          {successMessage && (
-            <div className="mb-4 bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl text-xs font-semibold flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-              <span>{successMessage}</span>
-            </div>
-          )}
-
-          {/* Form CREATE PASSWORD */}
-          {mode === 'CREATE' && (
-            <form onSubmit={handleCreatePassword} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">
-                  Password Baru Penjual
-                </label>
-                <div className="relative">
-                  <input
-                    type={showNew ? 'text' : 'password'}
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Masukkan password baru..."
-                    className="w-full px-4 py-2.5 pr-10 rounded-xl border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm font-medium transition"
-                    autoFocus
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowNew(!showNew)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-                <span className="text-[11px] text-gray-500 mt-1 block">Minimal 4 karakter</span>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">
-                  Konfirmasi Password Baru
-                </label>
-                <div className="relative">
-                  <input
-                    type={showConfirm ? 'text' : 'password'}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Ulangi password baru..."
-                    className="w-full px-4 py-2.5 pr-10 rounded-xl border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm font-medium transition"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirm(!showConfirm)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="pt-2 flex items-center justify-end gap-2.5">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-4 py-2.5 rounded-xl border border-gray-300 text-gray-700 text-xs font-bold hover:bg-gray-100 transition"
-                >
-                  Batal (Kembali)
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/30 transition flex items-center gap-1.5"
-                >
-                  <KeyRound className="w-4 h-4" />
-                  Simpan & Masuk Penjual
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* Form LOGIN */}
-          {mode === 'LOGIN' && (
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">
-                  Password Penjual
-                </label>
-                <div className="relative">
-                  <input
-                    type={showLogin ? 'text' : 'password'}
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    placeholder="Masukkan password penjual..."
-                    className="w-full px-4 py-2.5 pr-10 rounded-xl border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm font-medium transition"
-                    autoFocus
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowLogin(!showLogin)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    {showLogin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-                <span className="text-[11px] text-gray-500 mt-1 block">
-                  Hanya staf kantin yang berhak mengakses halaman ini.
-                </span>
-              </div>
-
-              <div className="pt-2 flex items-center justify-end gap-2.5">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-4 py-2.5 rounded-xl border border-gray-300 text-gray-700 text-xs font-bold hover:bg-gray-100 transition"
-                >
-                  Batal (Kembali ke Mahasiswa)
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/30 transition flex items-center gap-1.5"
-                >
-                  <Lock className="w-4 h-4" />
-                  Buka Sisi Penjual
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* Form CHANGE PASSWORD */}
-          {mode === 'CHANGE_PASSWORD' && (
-            <form onSubmit={handleChangePassword} className="space-y-3.5">
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">
-                  Password Lama
-                </label>
-                <div className="relative">
-                  <input
-                    type={showOld ? 'text' : 'password'}
-                    value={oldPassword}
-                    onChange={(e) => setOldPassword(e.target.value)}
-                    placeholder="Masukkan password lama..."
-                    className="w-full px-4 py-2 pr-10 rounded-xl border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm font-medium transition"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowOld(!showOld)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    {showOld ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">
-                  Password Baru
-                </label>
-                <div className="relative">
-                  <input
-                    type={showNew ? 'text' : 'password'}
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Masukkan password baru..."
-                    className="w-full px-4 py-2 pr-10 rounded-xl border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm font-medium transition"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowNew(!showNew)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">
-                  Konfirmasi Password Baru
-                </label>
-                <div className="relative">
-                  <input
-                    type={showConfirm ? 'text' : 'password'}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Ulangi password baru..."
-                    className="w-full px-4 py-2 pr-10 rounded-xl border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm font-medium transition"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirm(!showConfirm)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="pt-2 flex items-center justify-end gap-2.5">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-4 py-2.5 rounded-xl border border-gray-300 text-gray-700 text-xs font-bold hover:bg-gray-100 transition"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shadow-md shadow-teal-600/30 transition flex items-center gap-1.5"
-                >
-                  <ShieldCheck className="w-4 h-4" />
-                  Simpan Password Baru
-                </button>
-              </div>
-            </form>
-          )}
-        </div>
+          {/* Action Buttons */}
+          <div className="pt-2 flex gap-2.5">
+            <button
+              type="button"
+              onClick={() => {
+                handleReset();
+                onClose();
+              }}
+              className="flex-1 py-2.5 border border-gray-200 hover:bg-gray-100 rounded-xl text-xs font-bold text-gray-600 transition"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              className={`flex-1 py-2.5 rounded-xl text-xs font-bold text-white shadow-md active:scale-95 transition flex items-center justify-center gap-1.5 ${
+                mode === 'SETUP'
+                  ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-500/20'
+                  : mode === 'CHANGE_PASSWORD'
+                  ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/20'
+                  : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20'
+              }`}
+            >
+              <Check className="w-4 h-4" />
+              {mode === 'SETUP' && 'Simpan & Masuk'}
+              {mode === 'VERIFY' && 'Buka Akses'}
+              {mode === 'CHANGE_PASSWORD' && 'Simpan Password'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

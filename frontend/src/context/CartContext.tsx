@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { CartItem, Menu } from '../types';
 
 interface CartContextType {
@@ -6,6 +6,7 @@ interface CartContextType {
   addToCart: (menu: Menu) => void;
   removeFromCart: (menuId: number) => void;
   updateQuantity: (menuId: number, delta: number) => void;
+  updateNotes: (menuId: number, notes: string) => void;
   clearCart: () => void;
   totalItems: number;
   totalPrice: number;
@@ -13,84 +14,39 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'kantin_cart';
-
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [items, setItems] = useState<CartItem[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = localStorage.getItem('kantin_cart');
       return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      console.error('Error loading cart from storage', e);
+    } catch {
       return [];
     }
   });
 
-  // Helper untuk menyimpan ke state & localStorage secara sinkron
-  const persistItems = useCallback((newItems: CartItem[]) => {
-    setItems(newItems);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newItems));
-    } catch (e) {
-      console.error('Error saving cart to storage', e);
-    }
-  }, []);
-
-  // Listen to cross-tab storage changes
   useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY) {
-        try {
-          const updated = e.newValue ? JSON.parse(e.newValue) : [];
-          setItems(updated);
-        } catch {
-          // ignore parsing error
-        }
-      }
-    };
+    localStorage.setItem('kantin_cart', JSON.stringify(items));
+  }, [items]);
 
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
-
-  const addToCart = useCallback(
-    (menu: Menu) => {
-      // Baca fresh dari storage jika memungkinkan
-      let currentItems = items;
-      try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) currentItems = JSON.parse(saved);
-      } catch {
-        // fallback to items state
-      }
-
-      const existingIndex = currentItems.findIndex((item) => item.menu.id === menu.id);
-      let updated: CartItem[];
-
-      if (existingIndex > -1) {
-        updated = currentItems.map((item, idx) =>
-          idx === existingIndex ? { ...item, quantity: item.quantity + 1 } : item
+  const addToCart = (menu: Menu) => {
+    setItems((prev) => {
+      const existing = prev.find((item) => item.menu.id === menu.id);
+      if (existing) {
+        return prev.map((item) =>
+          item.menu.id === menu.id ? { ...item, quantity: item.quantity + 1 } : item
         );
-      } else {
-        updated = [...currentItems, { menu, quantity: 1 }];
       }
+      return [...prev, { menu, quantity: 1 }];
+    });
+  };
 
-      persistItems(updated);
-    },
-    [items, persistItems]
-  );
+  const removeFromCart = (menuId: number) => {
+    setItems((prev) => prev.filter((item) => item.menu.id !== menuId));
+  };
 
-  const removeFromCart = useCallback(
-    (menuId: number) => {
-      const updated = items.filter((item) => item.menu.id !== menuId);
-      persistItems(updated);
-    },
-    [items, persistItems]
-  );
-
-  const updateQuantity = useCallback(
-    (menuId: number, delta: number) => {
-      const updated = items
+  const updateQuantity = (menuId: number, delta: number) => {
+    setItems((prev) => {
+      return prev
         .map((item) => {
           if (item.menu.id === menuId) {
             const newQty = item.quantity + delta;
@@ -99,15 +55,18 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return item;
         })
         .filter(Boolean) as CartItem[];
+    });
+  };
 
-      persistItems(updated);
-    },
-    [items, persistItems]
-  );
+  const updateNotes = (menuId: number, notes: string) => {
+    setItems((prev) =>
+      prev.map((item) => (item.menu.id === menuId ? { ...item, notes } : item))
+    );
+  };
 
-  const clearCart = useCallback(() => {
-    persistItems([]);
-  }, [persistItems]);
+  const clearCart = () => {
+    setItems([]);
+  };
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = items.reduce((sum, item) => sum + item.menu.price * item.quantity, 0);
@@ -119,6 +78,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addToCart,
         removeFromCart,
         updateQuantity,
+        updateNotes,
         clearCart,
         totalItems,
         totalPrice,

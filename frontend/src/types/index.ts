@@ -22,6 +22,7 @@ export interface Menu {
 export interface CartItem {
   menu: Menu;
   quantity: number;
+  notes?: string;
 }
 
 export type PaymentStatus = 'PENDING' | 'PAID' | 'REJECTED' | 'CANCELLED';
@@ -43,6 +44,7 @@ export interface OrderItem {
   quantity: number;
   priceAtOrder: number;
   subtotal: number;
+  notes?: string;
   menu?: Menu;
 }
 

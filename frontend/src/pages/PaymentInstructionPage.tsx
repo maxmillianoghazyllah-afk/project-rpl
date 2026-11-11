@@ -15,7 +15,6 @@ export const PaymentInstructionPage: React.FC<PaymentInstructionPageProps> = ({
   onPaymentConfirmed,
   onNavigateToQueue,
 }) => {
-  const [proofUrl, setProofUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +23,7 @@ export const PaymentInstructionPage: React.FC<PaymentInstructionPageProps> = ({
     try {
       setLoading(true);
       setError(null);
-      await api.confirmPayment(order.id, proofUrl || undefined);
+      await api.confirmPayment(order.id);
       setConfirmed(true);
       const updatedOrder = await api.getOrderById(order.id);
       onPaymentConfirmed(updatedOrder);
@@ -90,20 +89,10 @@ export const PaymentInstructionPage: React.FC<PaymentInstructionPageProps> = ({
 
           {/* Confirmation Box */}
           <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
-            <h4 className="font-bold text-gray-900 text-xs mb-2">Konfirmasi Pengiriman Pembayaran</h4>
-            
-            <div className="mb-4">
-              <label className="block text-[11px] text-gray-500 mb-1">
-                Catatan / Link Bukti Transfer (Opsional):
-              </label>
-              <input
-                type="text"
-                placeholder="Contoh: Transfer via GoPay a.n Budi / link foto"
-                value={proofUrl}
-                onChange={(e) => setProofUrl(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none"
-              />
-            </div>
+            <h4 className="font-bold text-gray-900 text-sm mb-2">Konfirmasi Pembayaran</h4>
+            <p className="text-xs text-gray-500 mb-4">
+              Setelah menyelesaikan transfer via QRIS, klik tombol di bawah untuk mengonfirmasi bahwa Anda sudah membayar.
+            </p>
 
             {confirmed ? (
               <div className="space-y-3">

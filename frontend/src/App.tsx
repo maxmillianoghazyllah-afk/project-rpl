@@ -6,323 +6,264 @@ import { MenuPage } from './pages/MenuPage';
 import { CartPage } from './pages/CartPage';
 import { PaymentInstructionPage } from './pages/PaymentInstructionPage';
 import { QueueStatusPage } from './pages/QueueStatusPage';
-import { OrderHistoryPage } from './pages/OrderHistoryPage';
 import { SellerDashboardPage } from './pages/seller/SellerDashboardPage';
 import { SellerMenuPage } from './pages/seller/SellerMenuPage';
 import { SellerQueueDisplayPage } from './pages/seller/SellerQueueDisplayPage';
 import { SellerAuthModal, AuthModalMode } from './components/SellerAuthModal';
 import { Order, UserRole } from './types';
-import { Lock } from 'lucide-react';
+
+function getSubpathPrefix(): string {
+  const segments = window.location.pathname.split('/').filter(Boolean);
+  if (
+    segments.length > 0 &&
+    !['seller', 'cart', 'payment', 'queue', 'history', 'api'].includes(segments[0].toLowerCase())
+  ) {
+    return '/' + segments[0];
+  }
+  return '';
+}
+
+function parseUrlRoute(): { role: UserRole; tab: string; isProtected: boolean } {
+  let path = window.location.pathname.toLowerCase();
+  const prefix = getSubpathPrefix().toLowerCase();
+  if (prefix && path.startsWith(prefix)) {
+    path = path.slice(prefix.length) || '/';
+  }
+
+  if (path === '/seller/display') {
+    return { role: 'SELLER', tab: 'seller-display', isProtected: true };
+  }
+  if (path === '/seller/menus') {
+    return { role: 'SELLER', tab: 'seller-menus', isProtected: true };
+  }
+  if (path.startsWith('/seller')) {
+    return { role: 'SELLER', tab: 'seller-orders', isProtected: true };
+  }
+  if (path === '/cart') {
+    return { role: 'CUSTOMER', tab: 'cart', isProtected: false };
+  }
+  if (path === '/queue' || path === '/history') {
+    return { role: 'CUSTOMER', tab: 'queue', isProtected: false };
+  }
+  if (path === '/payment') {
+    return { role: 'CUSTOMER', tab: 'payment', isProtected: false };
+  }
+
+  return { role: 'CUSTOMER', tab: 'menu', isProtected: false };
+}
+
+function getPathForTab(tab: string): string {
+  const prefix = getSubpathPrefix();
+  let subRoute = '/';
+  switch (tab) {
+    case 'menu':
+      subRoute = '/';
+      break;
+    case 'cart':
+      subRoute = '/cart';
+      break;
+    case 'payment':
+      subRoute = '/payment';
+      break;
+    case 'queue':
+      subRoute = '/queue';
+      break;
+    case 'history':
+      subRoute = '/history';
+      break;
+    case 'seller-orders':
+      subRoute = '/seller';
+      break;
+    case 'seller-menus':
+      subRoute = '/seller/menus';
+      break;
+    case 'seller-display':
+      subRoute = '/seller/display';
+      break;
+    default:
+      subRoute = '/';
+  }
+  return prefix ? (subRoute === '/' ? `${prefix}/` : `${prefix}${subRoute}`) : subRoute;
+}
 
 export const App: React.FC = () => {
   const [activeRole, setActiveRole] = useState<UserRole>('CUSTOMER');
   const [currentTab, setCurrentTab] = useState<string>('menu');
+  const [activeOrder, setActiveOrder] = useState<Order | null>(null);
 
-  // Simpan activeOrder di state & localStorage agar tidak hilang saat refresh atau pindah tab
-  const [activeOrder, setActiveOrder] = useState<Order | null>(() => {
-    try {
-      const saved = localStorage.getItem('kantin_active_order');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
-
-  // Modal Auth State
+  // Seller Auth Modal states
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authModalMode, setAuthModalMode] = useState<AuthModalMode>('LOGIN');
-  const [pendingTab, setPendingTab] = useState<string | null>(null);
+  const [authModalMode, setAuthModalMode] = useState<AuthModalMode>('VERIFY');
+  const [pendingSellerTab, setPendingSellerTab] = useState<string>('seller-orders');
 
-  // Check if seller session is unlocked
-  const isSellerUnlocked = () => {
-    return sessionStorage.getItem('kantin_seller_session') === 'true';
-  };
+  // Change tab and sync with browser URL history
+  const navigateToTab = useCallback((tab: string, role?: UserRole) => {
+    const targetRole = role || (tab.startsWith('seller-') ? 'SELLER' : 'CUSTOMER');
+    setActiveRole(targetRole);
+    setCurrentTab(tab);
+    localStorage.setItem('kantin_active_role', targetRole);
 
-  // Check if a password has been created previously
-  const hasSellerPassword = () => {
-    return Boolean(localStorage.getItem('kantin_seller_password'));
-  };
-
-  // Convert tab to URL path
-  const getPathForTab = (tab: string): string => {
-    switch (tab) {
-      case 'menu':
-        return '/';
-      case 'cart':
-        return '/cart';
-      case 'payment':
-        return '/payment';
-      case 'queue':
-        return '/queue';
-      case 'history':
-        return '/history';
-      case 'seller-orders':
-        return '/seller';
-      case 'seller-menus':
-        return '/seller/menus';
-      case 'seller-display':
-        return '/seller/display';
-      default:
-        return '/';
+    const path = getPathForTab(tab);
+    if (window.location.pathname !== path) {
+      window.history.pushState(null, '', path);
     }
-  };
+  }, []);
 
-  // Convert URL path to tab & role info
-  const resolveRoute = useCallback(
-    (
-      pathname: string
-    ): {
-      role: UserRole;
-      tab: string;
-      isSellerProtected: boolean;
-    } => {
-      const path = pathname.toLowerCase().replace(/\/+$/, '') || '/';
+  // Request seller access with password protection check
+  const requestSellerAccess = useCallback((targetTab = 'seller-orders') => {
+    const isSellerAuthenticated = sessionStorage.getItem('kantin_seller_session') === 'true';
+    const hasExistingPassword = !!localStorage.getItem('kantin_seller_password');
 
-      if (path === '/seller/display') {
-        return { role: 'SELLER', tab: 'seller-display', isSellerProtected: true };
-      }
-      if (path === '/seller/menus') {
-        return { role: 'SELLER', tab: 'seller-menus', isSellerProtected: true };
-      }
-      if (path === '/seller' || path === '/seller/orders') {
-        return { role: 'SELLER', tab: 'seller-orders', isSellerProtected: true };
-      }
-      if (path === '/cart') {
-        return { role: 'CUSTOMER', tab: 'cart', isSellerProtected: false };
-      }
-      if (path === '/payment') {
-        return { role: 'CUSTOMER', tab: 'payment', isSellerProtected: false };
-      }
-      if (path === '/queue') {
-        return { role: 'CUSTOMER', tab: 'queue', isSellerProtected: false };
-      }
-      if (path === '/history') {
-        return { role: 'CUSTOMER', tab: 'history', isSellerProtected: false };
-      }
-      return { role: 'CUSTOMER', tab: 'menu', isSellerProtected: false };
-    },
-    []
-  );
+    if (isSellerAuthenticated) {
+      navigateToTab(targetTab, 'SELLER');
+      return;
+    }
 
-  // Central Navigation Handler
-  const navigateToTab = useCallback(
-    (targetTab: string, replaceUrl = false) => {
-      const targetPath = getPathForTab(targetTab);
-      const isSellerTab = targetTab.startsWith('seller-');
+    setPendingSellerTab(targetTab);
+    if (!hasExistingPassword) {
+      setAuthModalMode('SETUP');
+    } else {
+      setAuthModalMode('VERIFY');
+    }
+    setIsAuthModalOpen(true);
+  }, [navigateToTab]);
 
-      if (isSellerTab) {
-        if (!isSellerUnlocked()) {
-          // Trigger password prompt
-          setPendingTab(targetTab);
-          setAuthModalMode(hasSellerPassword() ? 'LOGIN' : 'CREATE');
-          setIsAuthModalOpen(true);
-          return;
-        }
-
-        // Unlocked seller access
-        setActiveRole('SELLER');
-        setCurrentTab(targetTab);
-        localStorage.setItem('kantin_active_role', 'SELLER');
-        if (replaceUrl) {
-          window.history.replaceState({}, '', targetPath);
-        } else {
-          window.history.pushState({}, '', targetPath);
-        }
-      } else {
-        // Customer tab (cukup klik tab mahasiswa langsung bisa beralih)
-        setActiveRole('CUSTOMER');
-        setCurrentTab(targetTab);
-        localStorage.setItem('kantin_active_role', 'CUSTOMER');
-        if (replaceUrl) {
-          window.history.replaceState({}, '', targetPath);
-        } else {
-          window.history.pushState({}, '', targetPath);
-        }
-      }
-    },
-    []
-  );
-
-  // Initial load: parse current URL path and listen for back/forward popstate
+  // Initial load: parse route and check protection
   useEffect(() => {
-    const handleLocationChange = () => {
-      const { role, tab, isSellerProtected } = resolveRoute(window.location.pathname);
+    const route = parseUrlRoute();
 
-      if (isSellerProtected) {
-        if (isSellerUnlocked()) {
+    if (route.isProtected) {
+      const isSellerAuthenticated = sessionStorage.getItem('kantin_seller_session') === 'true';
+      if (isSellerAuthenticated) {
+        setActiveRole('SELLER');
+        setCurrentTab(route.tab);
+      } else {
+        // Require password
+        requestSellerAccess(route.tab);
+        // Default safe customer view while waiting
+        setActiveRole('CUSTOMER');
+        setCurrentTab('menu');
+      }
+    } else {
+      setActiveRole(route.role);
+      setCurrentTab(route.tab);
+    }
+
+    // Handle browser back and forward buttons
+    const handlePopState = () => {
+      const currentRoute = parseUrlRoute();
+      if (currentRoute.isProtected) {
+        const isAuthed = sessionStorage.getItem('kantin_seller_session') === 'true';
+        if (isAuthed) {
           setActiveRole('SELLER');
-          setCurrentTab(tab);
-          localStorage.setItem('kantin_active_role', 'SELLER');
+          setCurrentTab(currentRoute.tab);
         } else {
-          // Protected route accessed without session: open password modal
-          setPendingTab(tab);
-          setAuthModalMode(hasSellerPassword() ? 'LOGIN' : 'CREATE');
-          setIsAuthModalOpen(true);
+          requestSellerAccess(currentRoute.tab);
           setActiveRole('CUSTOMER');
           setCurrentTab('menu');
         }
       } else {
-        setActiveRole('CUSTOMER');
-        setCurrentTab(tab);
-        localStorage.setItem('kantin_active_role', 'CUSTOMER');
+        setActiveRole(currentRoute.role);
+        setCurrentTab(currentRoute.tab);
       }
     };
 
-    handleLocationChange();
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [requestSellerAccess]);
 
-    window.addEventListener('popstate', handleLocationChange);
-    return () => window.removeEventListener('popstate', handleLocationChange);
-  }, [resolveRoute]);
-
-  // Auth Modal Callbacks
   const handleAuthSuccess = () => {
     setIsAuthModalOpen(false);
-    const destination = pendingTab || 'seller-orders';
-    setPendingTab(null);
-    setActiveRole('SELLER');
-    setCurrentTab(destination);
-    localStorage.setItem('kantin_active_role', 'SELLER');
-    window.history.pushState({}, '', getPathForTab(destination));
+    if (authModalMode === 'SETUP' || authModalMode === 'VERIFY') {
+      navigateToTab(pendingSellerTab, 'SELLER');
+    }
   };
 
   const handleAuthClose = () => {
     setIsAuthModalOpen(false);
-    setPendingTab(null);
-    if (activeRole === 'SELLER' && !isSellerUnlocked()) {
-      setActiveRole('CUSTOMER');
-      setCurrentTab('menu');
-      localStorage.setItem('kantin_active_role', 'CUSTOMER');
-      window.history.pushState({}, '', '/');
+    // If not authenticated and on a seller URL, revert back to customer menu
+    if (activeRole !== 'SELLER') {
+      navigateToTab('menu', 'CUSTOMER');
     }
   };
 
-  const handleOpenChangePassword = () => {
+  const handleLockSeller = () => {
+    sessionStorage.removeItem('kantin_seller_session');
+    navigateToTab('menu', 'CUSTOMER');
+  };
+
+  const handleRequestChangePassword = () => {
     setAuthModalMode('CHANGE_PASSWORD');
     setIsAuthModalOpen(true);
   };
 
-  const handleRequestSellerLogin = (targetTab: string = 'seller-orders') => {
-    if (isSellerUnlocked()) {
-      setActiveRole('SELLER');
-      setCurrentTab(targetTab);
-      localStorage.setItem('kantin_active_role', 'SELLER');
-      window.history.pushState({}, '', getPathForTab(targetTab));
-    } else {
-      setPendingTab(targetTab);
-      setAuthModalMode(hasSellerPassword() ? 'LOGIN' : 'CREATE');
-      setIsAuthModalOpen(true);
-    }
-  };
-
   const handleOrderCreated = (order: Order) => {
     setActiveOrder(order);
-    localStorage.setItem('kantin_active_order', JSON.stringify(order));
-    navigateToTab('payment');
+    navigateToTab('payment', 'CUSTOMER');
   };
 
   const handlePaymentConfirmed = (order: Order) => {
     setActiveOrder(order);
-    localStorage.setItem('kantin_active_order', JSON.stringify(order));
-    // Kosongkan keranjang saat pembayaran sudah berhasil dikonfirmasi
-    localStorage.removeItem('kantin_cart');
-    window.dispatchEvent(new Event('storage'));
-    navigateToTab('queue');
-  };
-
-  const handleSelectHistoryOrder = (order: Order) => {
-    setActiveOrder(order);
-    localStorage.setItem('kantin_active_order', JSON.stringify(order));
-    navigateToTab('queue');
+    navigateToTab('queue', 'CUSTOMER');
   };
 
   return (
     <CartProvider>
       <div className="min-h-screen flex flex-col bg-gray-50 text-gray-900">
-        {/* Navbar ditampikan kecuali di layar display fullscreen */}
-        {currentTab !== 'seller-display' && (
-          <Navbar
-            currentTab={currentTab}
-            onNavigate={(tab) => navigateToTab(tab)}
-            activeRole={activeRole}
-            onRequestSellerLogin={handleRequestSellerLogin}
-            onOpenChangePassword={handleOpenChangePassword}
-          />
-        )}
+        <Navbar
+          currentTab={currentTab}
+          setCurrentTab={(tab) => {
+            if (tab.startsWith('seller-')) {
+              requestSellerAccess(tab);
+            } else {
+              navigateToTab(tab, 'CUSTOMER');
+            }
+          }}
+          activeRole={activeRole}
+          onRequestSellerAccess={() => requestSellerAccess('seller-orders')}
+          onRequestChangePassword={handleRequestChangePassword}
+          onLockSeller={handleLockSeller}
+        />
 
         <main className="flex-1">
           {activeRole === 'CUSTOMER' ? (
             <>
               {currentTab === 'menu' && (
-                <MenuPage onNavigateToCart={() => navigateToTab('cart')} />
+                <MenuPage onNavigateToCart={() => navigateToTab('cart', 'CUSTOMER')} />
               )}
               {currentTab === 'cart' && (
                 <CartPage
-                  onNavigateToMenu={() => navigateToTab('menu')}
+                  onNavigateToMenu={() => navigateToTab('menu', 'CUSTOMER')}
                   onOrderCreated={handleOrderCreated}
                 />
               )}
-              {currentTab === 'payment' && (
-                activeOrder ? (
-                  <PaymentInstructionPage
-                    order={activeOrder}
-                    onPaymentConfirmed={handlePaymentConfirmed}
-                    onNavigateToQueue={() => navigateToTab('queue')}
-                  />
-                ) : (
-                  <div className="max-w-md mx-auto my-16 p-8 bg-white rounded-3xl shadow-md border border-gray-100 text-center">
-                    <p className="text-gray-500 text-sm mb-4">
-                      Belum ada pesanan aktif yang menunggu pembayaran.
-                    </p>
-                    <button
-                      onClick={() => navigateToTab('menu')}
-                      className="px-6 py-2.5 bg-brand-600 text-white font-bold rounded-xl text-xs"
-                    >
-                      Pilih Menu Kantin
-                    </button>
-                  </div>
-                )
+              {currentTab === 'payment' && activeOrder && (
+                <PaymentInstructionPage
+                  order={activeOrder}
+                  onPaymentConfirmed={handlePaymentConfirmed}
+                  onNavigateToQueue={() => navigateToTab('queue', 'CUSTOMER')}
+                />
               )}
               {currentTab === 'queue' && (
                 <QueueStatusPage
                   currentOrder={activeOrder}
-                  onNavigateToMenu={() => navigateToTab('menu')}
-                />
-              )}
-              {currentTab === 'history' && (
-                <OrderHistoryPage
-                  onSelectOrder={handleSelectHistoryOrder}
-                  onNavigateToMenu={() => navigateToTab('menu')}
+                  onNavigateToMenu={() => navigateToTab('menu', 'CUSTOMER')}
                 />
               )}
             </>
           ) : (
             <>
-              {!isSellerUnlocked() ? (
-                <div className="max-w-md mx-auto my-16 p-8 bg-white rounded-3xl shadow-xl border border-gray-100 text-center">
-                  <div className="w-16 h-16 mx-auto mb-4 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center">
-                    <Lock className="w-8 h-8" />
-                  </div>
-                  <h2 className="text-xl font-black text-gray-900 mb-2">Akses Terkunci</h2>
-                  <p className="text-xs text-gray-500 mb-6">
-                    Halaman ini memerlukan otentikasi password penjual kantin.
-                  </p>
-                  <button
-                    onClick={() => handleRequestSellerLogin(currentTab)}
-                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm transition shadow-lg shadow-emerald-600/20"
-                  >
-                    Buka dengan Password
-                  </button>
-                </div>
-              ) : (
-                <>
-                  {currentTab === 'seller-orders' && <SellerDashboardPage />}
-                  {currentTab === 'seller-menus' && <SellerMenuPage />}
-                  {currentTab === 'seller-display' && (
-                    <SellerQueueDisplayPage
-                      onBackToDashboard={() => navigateToTab('seller-orders')}
-                    />
-                  )}
-                </>
+              {currentTab === 'seller-orders' && (
+                <SellerDashboardPage
+                  onNavigateToTab={(tab) => navigateToTab(tab, 'SELLER')}
+                  onRequestChangePassword={handleRequestChangePassword}
+                />
+              )}
+              {currentTab === 'seller-menus' && <SellerMenuPage />}
+              {currentTab === 'seller-display' && (
+                <SellerQueueDisplayPage
+                  onBackToDashboard={() => navigateToTab('seller-orders', 'SELLER')}
+                />
               )}
             </>
           )}
@@ -330,12 +271,12 @@ export const App: React.FC = () => {
 
         {currentTab !== 'seller-display' && <Footer />}
 
-        {/* Modal Password Guard */}
+        {/* Seller Password Authentication & Management Modal */}
         <SellerAuthModal
           isOpen={isAuthModalOpen}
           mode={authModalMode}
-          onSuccess={handleAuthSuccess}
           onClose={handleAuthClose}
+          onSuccess={handleAuthSuccess}
         />
       </div>
     </CartProvider>

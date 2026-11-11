@@ -9,6 +9,7 @@ export interface MenuItemInput {
   price: number;
   name: string;
   isAvailable: boolean;
+  notes?: string;
 }
 
 export interface CalculatedOrderItem {
@@ -17,6 +18,7 @@ export interface CalculatedOrderItem {
   quantity: number;
   priceAtOrder: number;
   subtotal: number;
+  notes?: string;
 }
 
 export interface OrderCalculationResult {
@@ -70,6 +72,7 @@ export function processOrderItems(rawItems: MenuItemInput[]): OrderCalculationRe
       quantity: item.quantity,
       priceAtOrder: item.price,
       subtotal,
+      notes: item.notes?.trim() || undefined,
     });
   }
 

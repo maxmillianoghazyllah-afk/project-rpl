@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { processOrderItems, generateOrderNumber, MenuItemInput } from '../services/order.service';
@@ -18,7 +18,7 @@ export const createOrder = async (req: AuthenticatedRequest, res: Response) => {
       if (!user) {
         user = await prisma.user.create({
           data: {
-            name: customerName || 'Budi Santoso (Mahasiswa)',
+            name: customerName || 'Mahasiswa',
             email: defaultEmail,
             passwordHash: 'demopassword',
             role: 'CUSTOMER',
@@ -41,6 +41,7 @@ export const createOrder = async (req: AuthenticatedRequest, res: Response) => {
         price: menu.price,
         quantity: parseInt(item.quantity, 10),
         isAvailable: menu.isAvailable,
+        notes: item.notes,
       });
     }
 
@@ -48,7 +49,7 @@ export const createOrder = async (req: AuthenticatedRequest, res: Response) => {
     const calculation = processOrderItems(rawItems);
     const orderNumber = generateOrderNumber();
 
-    const order = await prisma.$transaction(async (tx) => {
+    const order = await prisma.$transaction(async (tx: any) => {
       const newOrder = await tx.order.create({
         data: {
           userId,
@@ -158,7 +159,7 @@ export const updateOrderStatus = async (req: AuthenticatedRequest, res: Response
       return res.status(400).json({ message: `Status tidak valid. Pilihan: ${validStatuses.join(', ')}` });
     }
 
-    const updatedOrder = await prisma.$transaction(async (tx) => {
+    const updatedOrder = await prisma.$transaction(async (tx: any) => {
       const order = await tx.order.update({
         where: { id },
         data: { status },
@@ -185,5 +186,40 @@ export const updateOrderStatus = async (req: AuthenticatedRequest, res: Response
     return res.json({ message: 'Status pesanan berhasil diperbarui', order: updatedOrder });
   } catch (error: any) {
     return res.status(500).json({ message: 'Gagal memperbarui status pesanan', error: error.message });
+  }
+};
+
+export const deleteOrder = async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(String(req.params.id), 10);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: 'ID pesanan tidak valid' });
+    }
+
+    await prisma.$transaction(async (tx: any) => {
+      await tx.queue.deleteMany({ where: { orderId: id } });
+      await tx.payment.deleteMany({ where: { orderId: id } });
+      await tx.orderItem.deleteMany({ where: { orderId: id } });
+      await tx.order.delete({ where: { id } });
+    });
+
+    return res.json({ message: 'Pesanan dan antrean berhasil dihapus' });
+  } catch (error: any) {
+    return res.status(500).json({ message: 'Gagal menghapus pesanan', error: error.message });
+  }
+};
+
+export const clearAllOrders = async (_req: Request, res: Response) => {
+  try {
+    await prisma.$transaction(async (tx: any) => {
+      await tx.queue.deleteMany({});
+      await tx.payment.deleteMany({});
+      await tx.orderItem.deleteMany({});
+      await tx.order.deleteMany({});
+    });
+
+    return res.json({ message: 'Seluruh antrean dan riwayat pesanan berhasil dibersihkan' });
+  } catch (error: any) {
+    return res.status(500).json({ message: 'Gagal membersihkan semua antrean', error: error.message });
   }
 };

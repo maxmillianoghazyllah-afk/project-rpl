@@ -1,41 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Monitor,
-  BellRing,
-  ChefHat,
-  Clock,
-  UtensilsCrossed,
-  CheckCircle2,
-  XCircle,
-  LayoutGrid,
-  Columns,
-  ArrowLeft,
-  RefreshCw,
-} from 'lucide-react';
+import { Monitor, BellRing, ChefHat, Clock, Utensils, CheckCircle, XCircle, ArrowLeft, Layers } from 'lucide-react';
 import { api } from '../../services/api';
 import { Queue, Menu } from '../../types';
 
 interface SellerQueueDisplayPageProps {
   onBackToDashboard?: () => void;
+  initialMode?: 'queue' | 'menu' | 'split';
 }
 
 export const SellerQueueDisplayPage: React.FC<SellerQueueDisplayPageProps> = ({
   onBackToDashboard,
+  initialMode = 'queue',
 }) => {
   const [queues, setQueues] = useState<Queue[]>([]);
   const [menus, setMenus] = useState<Menu[]>([]);
-  const [displayMode, setDisplayMode] = useState<'QUEUE' | 'MENUS' | 'SPLIT'>('SPLIT');
+  const [displayMode, setDisplayMode] = useState<'queue' | 'menu' | 'split'>(initialMode);
   const [time, setTime] = useState(new Date().toLocaleTimeString('id-ID'));
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     loadData();
-    const dataInterval = setInterval(loadData, 4000);
+    const qInterval = setInterval(loadData, 4000);
     const clockInterval = setInterval(() => {
       setTime(new Date().toLocaleTimeString('id-ID'));
     }, 1000);
     return () => {
-      clearInterval(dataInterval);
+      clearInterval(qInterval);
       clearInterval(clockInterval);
     };
   }, []);
@@ -53,441 +42,465 @@ export const SellerQueueDisplayPage: React.FC<SellerQueueDisplayPageProps> = ({
     }
   };
 
+  const waitingQueues = queues.filter((q) => q.status === 'WAITING');
   const inProgressQueues = queues.filter((q) => q.status === 'IN_PROGRESS');
   const readyQueues = queues.filter((q) => q.status === 'READY');
-  const waitingQueues = queues.filter((q) => q.status === 'WAITING');
 
   const availableMenus = menus.filter((m) => m.isAvailable);
   const outOfStockMenus = menus.filter((m) => !m.isAvailable);
 
-  const formatIDR = (val: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-    }).format(val);
-  };
-
   return (
-    <div className="bg-gray-950 text-white min-h-screen p-4 sm:p-6 lg:p-8 flex flex-col justify-between selection:bg-brand-500">
-      {/* Top Header Banner */}
+    <div className="bg-gray-950 text-white min-h-screen p-4 sm:p-6 lg:p-8 flex flex-col justify-between">
+      {/* Top Banner & Control Bar */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between border-b border-gray-800 pb-5 mb-6 gap-4">
+        {/* Title & Navigation */}
         <div className="flex items-center gap-3">
           {onBackToDashboard && (
             <button
               onClick={onBackToDashboard}
+              className="p-2.5 bg-gray-900 hover:bg-gray-800 border border-gray-800 rounded-xl text-gray-400 hover:text-white transition flex items-center gap-1.5 text-xs font-bold"
               title="Kembali ke Dashboard Penjual"
-              className="px-3 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition flex items-center gap-1.5 text-xs font-semibold mr-2 border border-gray-700"
             >
               <ArrowLeft className="w-4 h-4" />
-              Kembali
+              <span className="hidden sm:inline">Dashboard</span>
             </button>
           )}
 
-          <div className="w-12 h-12 rounded-2xl bg-brand-600 flex items-center justify-center shadow-lg shadow-brand-500/30">
-            <Monitor className="w-7 h-7 text-white" />
+          <div className="w-11 h-11 rounded-2xl bg-brand-600 flex items-center justify-center shadow-lg shadow-brand-500/30">
+            <Monitor className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-white flex items-center gap-2">
-              Layar Display Informasi Kantin
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
+              Layar Monitor Konter Kantin
+              <span className="text-[10px] uppercase font-bold bg-gray-800 text-gray-300 px-2 py-0.5 rounded-full border border-gray-700">
+                Live TV
+              </span>
             </h1>
             <p className="text-xs text-gray-400">
-              Papan Monitor Digital TV Antrean & Ketersediaan Stok Menu Kampus
+              {displayMode === 'queue' && 'Papan nomor antrean: Menunggu, Sedang Disiapkan, dan Siap Diambil'}
+              {displayMode === 'menu' && 'Papan ketersediaan menu makanan & minuman mahasiswa'}
+              {displayMode === 'split' && 'Mode kombinasi: Antrean Lengkap & Ketersediaan Menu'}
             </p>
           </div>
         </div>
 
-        {/* Display Mode Switcher & Digital Clock */}
-        <div className="flex items-center gap-4 flex-wrap self-end md:self-auto">
+        {/* Display Mode Switcher & Clock */}
+        <div className="flex items-center justify-between w-full md:w-auto gap-4">
           {/* Mode Switcher Buttons */}
           <div className="bg-gray-900 p-1 rounded-2xl border border-gray-800 flex items-center text-xs font-bold">
             <button
-              onClick={() => setDisplayMode('QUEUE')}
-              className={`px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 ${
-                displayMode === 'QUEUE'
-                  ? 'bg-purple-600 text-white shadow-md'
-                  : 'text-gray-400 hover:text-gray-200'
-              }`}
-            >
-              <BellRing className="w-3.5 h-3.5" />
-              Monitor Antrean
-            </button>
-            <button
-              onClick={() => setDisplayMode('MENUS')}
-              className={`px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 ${
-                displayMode === 'MENUS'
-                  ? 'bg-emerald-600 text-white shadow-md'
-                  : 'text-gray-400 hover:text-gray-200'
-              }`}
-            >
-              <UtensilsCrossed className="w-3.5 h-3.5" />
-              Ketersediaan Menu
-            </button>
-            <button
-              onClick={() => setDisplayMode('SPLIT')}
-              className={`px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 ${
-                displayMode === 'SPLIT'
+              onClick={() => setDisplayMode('queue')}
+              className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition ${
+                displayMode === 'queue'
                   ? 'bg-brand-600 text-white shadow-md'
                   : 'text-gray-400 hover:text-gray-200'
               }`}
             >
-              <Columns className="w-3.5 h-3.5" />
-              Layar Bersama (Split)
+              <BellRing className="w-3.5 h-3.5" />
+              Antrean (3 Kolom)
+            </button>
+            <button
+              onClick={() => setDisplayMode('menu')}
+              className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition ${
+                displayMode === 'menu'
+                  ? 'bg-amber-600 text-white shadow-md'
+                  : 'text-gray-400 hover:text-gray-200'
+              }`}
+            >
+              <Utensils className="w-3.5 h-3.5" />
+              Menu Tersedia
+            </button>
+            <button
+              onClick={() => setDisplayMode('split')}
+              className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition ${
+                displayMode === 'split'
+                  ? 'bg-purple-600 text-white shadow-md'
+                  : 'text-gray-400 hover:text-gray-200'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              Split (Keduanya)
             </button>
           </div>
 
-          <div className="text-right pl-2 border-l border-gray-800">
-            <div className="font-mono text-2xl sm:text-3xl font-black text-amber-400 leading-none">
-              {time}
-            </div>
-            <div className="text-[11px] text-gray-400 font-medium mt-1">
-              {new Date().toLocaleDateString('id-ID', {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'short',
-              })}
+          {/* Real-time Clock */}
+          <div className="text-right pl-2 border-l border-gray-800 hidden sm:block">
+            <div className="font-mono text-2xl font-black text-amber-400 tracking-tight">{time}</div>
+            <div className="text-[10px] text-gray-400 font-medium">
+              {new Date().toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' })}
             </div>
           </div>
         </div>
       </div>
 
-      {/* ============================================================== */}
-      {/* MODE 1: MONITOR ANTREAN (FULL) */}
-      {/* ============================================================== */}
-      {displayMode === 'QUEUE' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 flex-1 mb-6 animate-fadeIn">
-          {/* Kolom Kiri: Sedang Disiapkan */}
-          <div className="bg-gray-900/90 rounded-3xl border border-gray-800 p-6 flex flex-col shadow-2xl">
-            <div className="flex items-center gap-3 pb-4 border-b border-gray-800 mb-6 text-purple-400">
-              <ChefHat className="w-7 h-7 animate-pulse" />
-              <div>
-                <h2 className="text-xl font-black uppercase tracking-wider">Sedang Disiapkan</h2>
-                <p className="text-xs text-gray-400">Pesanan sedang dimasak oleh staf dapur</p>
-              </div>
-            </div>
-
-            <div className="flex-1">
-              {inProgressQueues.length === 0 ? (
-                <div className="h-full min-h-[220px] flex items-center justify-center text-gray-600 font-bold text-lg">
-                  Tidak ada pesanan sedang dimasak
+      {/* Main Boards Section */}
+      <div className="flex-1 mb-6">
+        {/* MODE 1: ANTREAN LENGKAP 3 KOLOM */}
+        {displayMode === 'queue' && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full">
+            {/* KOLOM 1: Menunggu / Belum Dimasak (Amber) */}
+            <div className="bg-gray-900/90 rounded-3xl border border-gray-800 p-6 flex flex-col shadow-2xl">
+              <div className="flex items-center justify-between pb-4 border-b border-gray-800 mb-6 text-amber-400">
+                <div className="flex items-center gap-2.5">
+                  <Clock className="w-6 h-6 animate-pulse" />
+                  <h2 className="text-lg font-black uppercase tracking-wider">Belum Dimasak</h2>
                 </div>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                  {inProgressQueues.map((q) => (
-                    <div
-                      key={q.id}
-                      className="bg-purple-950/40 border border-purple-800/60 rounded-2xl p-5 text-center shadow-inner"
-                    >
-                      <span className="font-mono text-3xl sm:text-4xl font-black text-purple-300">
-                        {q.queueNumber}
-                      </span>
-                      <span className="block text-[10px] text-purple-400 uppercase tracking-widest mt-1">
-                        Diproses
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Kolom Kanan: Silakan Ambil (Siap) */}
-          <div className="bg-gray-900/90 rounded-3xl border border-gray-800 p-6 flex flex-col shadow-2xl">
-            <div className="flex items-center gap-3 pb-4 border-b border-gray-800 mb-6 text-emerald-400">
-              <BellRing className="w-7 h-7 animate-bounce" />
-              <div>
-                <h2 className="text-xl font-black uppercase tracking-wider">Silakan Ambil (Siap)</h2>
-                <p className="text-xs text-gray-400">Silakan menuju ke konter kantin</p>
-              </div>
-            </div>
-
-            <div className="flex-1">
-              {readyQueues.length === 0 ? (
-                <div className="h-full min-h-[220px] flex items-center justify-center text-gray-600 font-bold text-lg">
-                  Belum ada pesanan yang siap diambil
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                  {readyQueues.map((q) => (
-                    <div
-                      key={q.id}
-                      className="bg-emerald-950/60 border-2 border-emerald-500 rounded-2xl p-5 text-center shadow-xl shadow-emerald-900/30 animate-pulse"
-                    >
-                      <span className="font-mono text-4xl sm:text-5xl font-black text-emerald-300 tracking-tight">
-                        {q.queueNumber}
-                      </span>
-                      <span className="block text-xs font-black text-emerald-400 uppercase tracking-widest mt-1">
-                        Ambil di Konter
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ============================================================== */}
-      {/* MODE 2: KETERSEDIAAN MENU (FULL TV BOARD) */}
-      {/* ============================================================== */}
-      {displayMode === 'MENUS' && (
-        <div className="flex-1 mb-6 flex flex-col gap-6 animate-fadeIn">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1">
-            {/* Menu Tersedia (2 Kolom) */}
-            <div className="lg:col-span-2 bg-gray-900/90 rounded-3xl border border-gray-800 p-6 flex flex-col shadow-2xl">
-              <div className="flex items-center justify-between pb-4 border-b border-gray-800 mb-5">
-                <div className="flex items-center gap-2.5 text-emerald-400">
-                  <CheckCircle2 className="w-6 h-6" />
-                  <h2 className="text-xl font-black uppercase tracking-wider">
-                    Menu Tersedia Hari Ini ({availableMenus.length})
-                  </h2>
-                </div>
-                <span className="text-xs bg-emerald-950/80 text-emerald-300 border border-emerald-800/80 px-3 py-1 rounded-full font-bold">
-                  Siap Dipesan
+                <span className="text-xs bg-amber-950/80 text-amber-300 px-2.5 py-1 rounded-full border border-amber-800/60 font-bold">
+                  {waitingQueues.length} antre
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 overflow-y-auto max-h-[520px] pr-1">
-                {availableMenus.map((menu) => (
-                  <div
-                    key={menu.id}
-                    className="bg-gray-800/70 border border-gray-700/60 rounded-2xl p-3.5 flex items-center justify-between hover:border-emerald-500/50 transition"
-                  >
-                    <div className="flex items-center gap-3">
-                      {menu.imageUrl ? (
-                        <img
-                          src={menu.imageUrl}
-                          alt={menu.name}
-                          className="w-12 h-12 rounded-xl object-cover border border-gray-700"
-                        />
-                      ) : (
-                        <div className="w-12 h-12 rounded-xl bg-gray-700 flex items-center justify-center text-gray-400">
-                          <UtensilsCrossed className="w-6 h-6" />
-                        </div>
-                      )}
-                      <div>
-                        <h4 className="font-bold text-white text-sm line-clamp-1">{menu.name}</h4>
-                        <span className="text-[11px] text-gray-400 block">
-                          {menu.category || 'Kantin'}
+              <div className="flex-1">
+                {waitingQueues.length === 0 ? (
+                  <div className="h-48 flex items-center justify-center text-gray-600 font-bold text-sm">
+                    Tidak ada antrean menunggu
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3.5">
+                    {waitingQueues.map((q) => (
+                      <div
+                        key={q.id}
+                        className="bg-amber-950/30 border border-amber-800/50 rounded-2xl p-4 text-center shadow-inner"
+                      >
+                        <span className="font-mono text-3xl font-black text-amber-300 block">
+                          {q.queueNumber}
+                        </span>
+                        <span className="text-[10px] text-amber-400 uppercase tracking-widest font-semibold mt-1 block">
+                          Menunggu Giliran
                         </span>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <span className="font-mono font-bold text-emerald-300 text-sm">
-                        {formatIDR(menu.price)}
-                      </span>
-                      <span className="block text-[10px] text-emerald-400 font-bold uppercase tracking-wider">
-                        Tersedia
-                      </span>
-                    </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
             </div>
 
-            {/* Menu Habis (1 Kolom) */}
+            {/* KOLOM 2: Sedang Disiapkan / Dimasak (Purple) */}
             <div className="bg-gray-900/90 rounded-3xl border border-gray-800 p-6 flex flex-col shadow-2xl">
-              <div className="flex items-center justify-between pb-4 border-b border-gray-800 mb-5">
-                <div className="flex items-center gap-2.5 text-rose-400">
-                  <XCircle className="w-6 h-6" />
-                  <h2 className="text-lg font-black uppercase tracking-wider">
-                    Menu Habis ({outOfStockMenus.length})
-                  </h2>
+              <div className="flex items-center justify-between pb-4 border-b border-gray-800 mb-6 text-purple-400">
+                <div className="flex items-center gap-2.5">
+                  <ChefHat className="w-6 h-6 animate-pulse" />
+                  <h2 className="text-lg font-black uppercase tracking-wider">Sedang Disiapkan</h2>
                 </div>
-                <span className="text-xs bg-rose-950/80 text-rose-300 border border-rose-800/80 px-2.5 py-1 rounded-full font-bold">
-                  Sold Out
+                <span className="text-xs bg-purple-950/80 text-purple-300 px-2.5 py-1 rounded-full border border-purple-800/60 font-bold">
+                  {inProgressQueues.length} proses
                 </span>
               </div>
 
-              {outOfStockMenus.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-center p-6 text-gray-500">
-                  <CheckCircle2 className="w-12 h-12 text-emerald-500/50 mb-2" />
-                  <p className="font-bold text-gray-400">Semua menu tersedia!</p>
-                  <span className="text-xs">Tidak ada menu yang habis saat ini.</span>
-                </div>
-              ) : (
-                <div className="space-y-3 overflow-y-auto max-h-[520px] pr-1">
-                  {outOfStockMenus.map((menu) => (
-                    <div
-                      key={menu.id}
-                      className="bg-rose-950/30 border border-rose-900/50 rounded-2xl p-3 flex items-center justify-between opacity-80"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-10 h-10 rounded-xl bg-gray-800 flex items-center justify-center text-rose-400">
-                          <XCircle className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-gray-300 text-sm line-through">
-                            {menu.name}
-                          </h4>
-                          <span className="text-[10px] text-gray-500">{menu.category}</span>
-                        </div>
+              <div className="flex-1">
+                {inProgressQueues.length === 0 ? (
+                  <div className="h-48 flex items-center justify-center text-gray-600 font-bold text-sm">
+                    Tidak ada pesanan sedang dimasak
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3.5">
+                    {inProgressQueues.map((q) => (
+                      <div
+                        key={q.id}
+                        className="bg-purple-950/40 border border-purple-800/60 rounded-2xl p-4 text-center shadow-inner"
+                      >
+                        <span className="font-mono text-3xl font-black text-purple-300 block">
+                          {q.queueNumber}
+                        </span>
+                        <span className="text-[10px] text-purple-400 uppercase tracking-widest font-semibold mt-1 block">
+                          Sedang Dimasak
+                        </span>
                       </div>
-                      <span className="bg-rose-900/80 text-rose-300 font-mono font-bold text-xs px-2.5 py-1 rounded-lg">
-                        HABIS
-                      </span>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* KOLOM 3: Silakan Ambil (Siap) (Emerald) */}
+            <div className="bg-gray-900/90 rounded-3xl border border-gray-800 p-6 flex flex-col shadow-2xl">
+              <div className="flex items-center justify-between pb-4 border-b border-gray-800 mb-6 text-emerald-400">
+                <div className="flex items-center gap-2.5">
+                  <BellRing className="w-6 h-6 animate-bounce" />
+                  <h2 className="text-lg font-black uppercase tracking-wider">Silakan Ambil (Siap)</h2>
                 </div>
-              )}
+                <span className="text-xs bg-emerald-950/80 text-emerald-300 px-2.5 py-1 rounded-full border border-emerald-800/60 font-bold">
+                  {readyQueues.length} siap
+                </span>
+              </div>
+
+              <div className="flex-1">
+                {readyQueues.length === 0 ? (
+                  <div className="h-48 flex items-center justify-center text-gray-600 font-bold text-sm">
+                    Belum ada pesanan yang siap diambil
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3.5">
+                    {readyQueues.map((q) => (
+                      <div
+                        key={q.id}
+                        className="bg-emerald-950/60 border-2 border-emerald-500 rounded-2xl p-4 text-center shadow-xl shadow-emerald-900/30 animate-pulse"
+                      >
+                        <span className="font-mono text-4xl font-black text-emerald-300 tracking-tight block">
+                          {q.queueNumber}
+                        </span>
+                        <span className="text-xs font-black text-emerald-400 uppercase tracking-widest mt-1 block">
+                          Ambil di Konter
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* ============================================================== */}
-      {/* MODE 3: SPLIT (LAYAR BERSAMA: ANTREAN + STATUS STOK MENU) */}
-      {/* ============================================================== */}
-      {displayMode === 'SPLIT' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 mb-6 animate-fadeIn">
-          {/* Kolom Kiri (7 Bagian): Antrean Siap & Disiapkan */}
-          <div className="lg:col-span-7 flex flex-col gap-6">
-            {/* Siap Diambil */}
-            <div className="bg-gray-900/90 rounded-3xl border border-gray-800 p-5 flex-1 shadow-2xl">
-              <div className="flex items-center gap-2.5 pb-3 border-b border-gray-800 mb-4 text-emerald-400">
-                <BellRing className="w-6 h-6 animate-bounce" />
-                <h3 className="font-black text-lg uppercase tracking-wider">
-                  Silakan Ambil di Konter ({readyQueues.length})
-                </h3>
+        {/* MODE 2: KETERSEDIAAN MENU */}
+        {displayMode === 'menu' && (
+          <div className="bg-gray-900/90 rounded-3xl border border-gray-800 p-6 flex flex-col shadow-2xl">
+            {/* Header info */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-gray-800 mb-6 gap-3">
+              <div className="flex items-center gap-3 text-amber-400">
+                <Utensils className="w-6 h-6" />
+                <div>
+                  <h2 className="text-xl font-black uppercase tracking-wider text-white">
+                    Daftar Menu & Ketersediaan Stok
+                  </h2>
+                  <p className="text-xs text-gray-400">
+                    Informasi ketersediaan makanan dan minuman terkini untuk mahasiswa
+                  </p>
+                </div>
               </div>
 
-              {readyQueues.length === 0 ? (
-                <div className="py-8 text-center text-gray-600 font-bold">
-                  Belum ada pesanan yang siap diambil
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {readyQueues.map((q) => (
-                    <div
-                      key={q.id}
-                      className="bg-emerald-950/70 border-2 border-emerald-500 rounded-2xl p-4 text-center shadow-lg animate-pulse"
-                    >
-                      <span className="font-mono text-3xl sm:text-4xl font-black text-emerald-300">
-                        {q.queueNumber}
-                      </span>
-                      <span className="block text-[10px] font-black text-emerald-400 uppercase tracking-widest mt-0.5">
-                        Siap
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <div className="flex items-center gap-3 text-xs font-bold">
+                <span className="px-3 py-1.5 rounded-xl bg-emerald-950 text-emerald-400 border border-emerald-800 flex items-center gap-1.5">
+                  <CheckCircle className="w-4 h-4" /> {availableMenus.length} Tersedia
+                </span>
+                <span className="px-3 py-1.5 rounded-xl bg-red-950 text-red-400 border border-red-800 flex items-center gap-1.5">
+                  <XCircle className="w-4 h-4" /> {outOfStockMenus.length} Habis
+                </span>
+              </div>
             </div>
 
-            {/* Sedang Dimasak */}
-            <div className="bg-gray-900/90 rounded-3xl border border-gray-800 p-5 flex-1 shadow-2xl">
-              <div className="flex items-center gap-2.5 pb-3 border-b border-gray-800 mb-4 text-purple-400">
-                <ChefHat className="w-6 h-6 animate-pulse" />
-                <h3 className="font-black text-lg uppercase tracking-wider">
-                  Sedang Disiapkan Dapur ({inProgressQueues.length})
-                </h3>
-              </div>
-
-              {inProgressQueues.length === 0 ? (
-                <div className="py-8 text-center text-gray-600 font-bold">
-                  Tidak ada pesanan sedang dimasak
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {inProgressQueues.map((q) => (
-                    <div
-                      key={q.id}
-                      className="bg-purple-950/40 border border-purple-800/60 rounded-2xl p-3.5 text-center"
-                    >
-                      <span className="font-mono text-2xl sm:text-3xl font-black text-purple-300">
-                        {q.queueNumber}
-                      </span>
-                      <span className="block text-[10px] text-purple-400 uppercase tracking-widest mt-0.5">
-                        Diproses
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Kolom Kanan (5 Bagian): Ketersediaan Menu Kantin */}
-          <div className="lg:col-span-5 bg-gray-900/90 rounded-3xl border border-gray-800 p-5 flex flex-col shadow-2xl">
-            <div className="flex items-center justify-between pb-3 border-b border-gray-800 mb-4">
-              <div className="flex items-center gap-2 text-amber-400">
-                <UtensilsCrossed className="w-5 h-5" />
-                <h3 className="font-black text-base uppercase tracking-wider">
-                  Info Ketersediaan Menu
-                </h3>
-              </div>
-              <span className="text-[11px] text-gray-400">Stok Real-time</span>
-            </div>
-
-            {/* Menu Habis Banner (Jika Ada) */}
-            {outOfStockMenus.length > 0 && (
-              <div className="mb-4 bg-rose-950/40 border border-rose-800/80 rounded-2xl p-3">
-                <div className="flex items-center gap-1.5 text-rose-400 font-bold text-xs uppercase mb-2">
-                  <XCircle className="w-4 h-4" /> Menu Habis ({outOfStockMenus.length}):
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {outOfStockMenus.map((m) => (
-                    <span
-                      key={m.id}
-                      className="bg-rose-900/60 text-rose-200 border border-rose-700/60 text-xs px-2.5 py-1 rounded-lg font-semibold line-through"
-                    >
-                      {m.name}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Menu Tersedia List */}
-            <div className="flex-1 overflow-y-auto max-h-[380px] space-y-2 pr-1">
-              <div className="text-[11px] text-emerald-400 font-bold uppercase tracking-wider mb-1">
-                Menu Rekomendasi Siap Dipesan:
-              </div>
-              {availableMenus.map((menu) => (
+            {/* Menu Cards Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 overflow-y-auto max-h-[62vh] pr-1">
+              {menus.map((menu) => (
                 <div
                   key={menu.id}
-                  className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-2.5 flex items-center justify-between text-xs"
+                  className={`rounded-2xl border p-4 transition flex flex-col justify-between ${
+                    menu.isAvailable
+                      ? 'bg-gray-800/80 border-gray-700/80 hover:border-gray-600'
+                      : 'bg-red-950/20 border-red-900/40 opacity-75'
+                  }`}
                 >
-                  <span className="font-bold text-gray-200 line-clamp-1">{menu.name}</span>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className="font-mono text-emerald-300 font-semibold">
-                      {formatIDR(menu.price)}
+                  <div className="flex items-start gap-3">
+                    <img
+                      src={
+                        menu.imageUrl ||
+                        'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80'
+                      }
+                      alt={menu.name}
+                      className="w-16 h-16 rounded-xl object-cover bg-gray-950 flex-shrink-0 border border-gray-700"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">
+                        {menu.category || 'Makanan'}
+                      </span>
+                      <h3 className="font-bold text-sm text-white truncate">{menu.name}</h3>
+                      <div className="font-black text-amber-400 text-sm mt-0.5">
+                        Rp {menu.price.toLocaleString('id-ID')}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 pt-3 border-t border-gray-800 flex items-center justify-between">
+                    <span className="text-[10px] text-gray-400 truncate max-w-[130px]">
+                      {menu.description || 'Porsi standar'}
                     </span>
-                    <span className="bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px] px-1.5 py-0.5 rounded font-bold">
-                      ADA
-                    </span>
+                    {menu.isAvailable ? (
+                      <span className="px-2.5 py-1 rounded-lg bg-emerald-950 text-emerald-400 border border-emerald-800/80 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                        <CheckCircle className="w-3 h-3" /> Tersedia
+                      </span>
+                    ) : (
+                      <span className="px-2.5 py-1 rounded-lg bg-red-900/80 text-white text-[10px] font-black uppercase tracking-wider flex items-center gap-1 animate-pulse">
+                        <XCircle className="w-3 h-3" /> Habis
+                      </span>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Bottom Footer Bar: Antrean Menunggu */}
-      <div className="bg-gray-900/80 rounded-2xl p-4 border border-gray-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-        <div className="flex items-center gap-2 text-gray-400 flex-wrap">
-          <Clock className="w-4 h-4 text-amber-400 flex-shrink-0" />
-          <span className="font-semibold text-gray-300">
-            Nomor Antrean Menunggu Diproses ({waitingQueues.length}):
-          </span>
-          <div className="flex gap-2 ml-1 flex-wrap">
-            {waitingQueues.slice(0, 8).map((q) => (
-              <span
-                key={q.id}
-                className="bg-gray-800 px-2 py-0.5 rounded font-mono font-bold text-amber-300 border border-gray-700"
-              >
-                {q.queueNumber}
-              </span>
-            ))}
-            {waitingQueues.length > 8 && (
-              <span className="text-gray-500 font-medium">+{waitingQueues.length - 8} lainnya</span>
-            )}
+        {/* MODE 3: SPLIT (ANTREAN 3 TAHAP DI KIRI, MENU DI KANAN) */}
+        {displayMode === 'split' && (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
+            {/* Kiri: Antrean Panggilan 3 Tahap (7 Kolom) */}
+            <div className="lg:col-span-7 space-y-4">
+              {/* Ready */}
+              <div className="bg-gray-900/90 rounded-2xl border border-gray-800 p-4 shadow-xl">
+                <div className="flex items-center justify-between pb-2 border-b border-gray-800 mb-3 text-emerald-400">
+                  <div className="flex items-center gap-2">
+                    <BellRing className="w-4 h-4 animate-bounce" />
+                    <h3 className="text-sm font-black uppercase tracking-wider">Silakan Ambil (Siap)</h3>
+                  </div>
+                  <span className="text-[11px] bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded-full font-bold">
+                    {readyQueues.length}
+                  </span>
+                </div>
+                {readyQueues.length === 0 ? (
+                  <p className="text-center py-3 text-gray-600 text-xs font-semibold">
+                    Belum ada pesanan siap diambil
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-3 gap-2.5">
+                    {readyQueues.map((q) => (
+                      <div
+                        key={q.id}
+                        className="bg-emerald-950/70 border-2 border-emerald-500 rounded-xl p-2.5 text-center animate-pulse"
+                      >
+                        <span className="font-mono text-2xl font-black text-emerald-300 block">
+                          {q.queueNumber}
+                        </span>
+                        <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest">
+                          Siap Ambil
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* In Progress */}
+              <div className="bg-gray-900/90 rounded-2xl border border-gray-800 p-4 shadow-xl">
+                <div className="flex items-center justify-between pb-2 border-b border-gray-800 mb-3 text-purple-400">
+                  <div className="flex items-center gap-2">
+                    <ChefHat className="w-4 h-4 animate-pulse" />
+                    <h3 className="text-sm font-black uppercase tracking-wider">Sedang Disiapkan</h3>
+                  </div>
+                  <span className="text-[11px] bg-purple-950 text-purple-300 px-2 py-0.5 rounded-full font-bold">
+                    {inProgressQueues.length}
+                  </span>
+                </div>
+                {inProgressQueues.length === 0 ? (
+                  <p className="text-center py-3 text-gray-600 text-xs font-semibold">
+                    Tidak ada pesanan sedang dimasak
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-3 gap-2.5">
+                    {inProgressQueues.map((q) => (
+                      <div
+                        key={q.id}
+                        className="bg-purple-950/40 border border-purple-800/60 rounded-xl p-2.5 text-center"
+                      >
+                        <span className="font-mono text-xl font-black text-purple-300 block">
+                          {q.queueNumber}
+                        </span>
+                        <span className="text-[9px] text-purple-400 uppercase tracking-widest">
+                          Dimasak
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Waiting / Belum Dimasak */}
+              <div className="bg-gray-900/90 rounded-2xl border border-gray-800 p-4 shadow-xl">
+                <div className="flex items-center justify-between pb-2 border-b border-gray-800 mb-3 text-amber-400">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 animate-pulse" />
+                    <h3 className="text-sm font-black uppercase tracking-wider">Belum Dimasak (Menunggu)</h3>
+                  </div>
+                  <span className="text-[11px] bg-amber-950 text-amber-300 px-2 py-0.5 rounded-full font-bold">
+                    {waitingQueues.length}
+                  </span>
+                </div>
+                {waitingQueues.length === 0 ? (
+                  <p className="text-center py-3 text-gray-600 text-xs font-semibold">
+                    Tidak ada antrean menunggu
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-3 gap-2.5">
+                    {waitingQueues.map((q) => (
+                      <div
+                        key={q.id}
+                        className="bg-amber-950/30 border border-amber-800/40 rounded-xl p-2.5 text-center"
+                      >
+                        <span className="font-mono text-xl font-black text-amber-300 block">
+                          {q.queueNumber}
+                        </span>
+                        <span className="text-[9px] text-amber-400 uppercase tracking-widest">
+                          Antre
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Kanan: Ketersediaan Menu (5 Kolom) */}
+            <div className="lg:col-span-5 bg-gray-900/90 rounded-3xl border border-gray-800 p-5 shadow-xl flex flex-col">
+              <div className="flex items-center justify-between pb-3 border-b border-gray-800 mb-4 text-amber-400">
+                <div className="flex items-center gap-2">
+                  <Utensils className="w-5 h-5" />
+                  <h3 className="text-base font-black uppercase tracking-wider text-white">Status Menu</h3>
+                </div>
+                <div className="flex gap-2 text-[10px]">
+                  <span className="text-emerald-400 font-bold">{availableMenus.length} Tersedia</span>
+                  <span className="text-gray-600">&bull;</span>
+                  <span className="text-red-400 font-bold">{outOfStockMenus.length} Habis</span>
+                </div>
+              </div>
+
+              <div className="space-y-2 overflow-y-auto max-h-[55vh] pr-1 flex-1">
+                {menus.map((m) => (
+                  <div
+                    key={m.id}
+                    className={`flex items-center justify-between p-2.5 rounded-xl border text-xs ${
+                      m.isAvailable
+                        ? 'bg-gray-800/60 border-gray-700/60 text-gray-200'
+                        : 'bg-red-950/20 border-red-900/40 text-gray-400'
+                    }`}
+                  >
+                    <div className="truncate pr-2">
+                      <span className="font-bold block truncate text-white">{m.name}</span>
+                      <span className="text-[10px] text-amber-400 font-semibold">
+                        Rp {m.price.toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                    {m.isAvailable ? (
+                      <span className="px-2 py-0.5 rounded-md bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px] font-bold">
+                        Tersedia
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-md bg-red-900 text-white text-[10px] font-bold animate-pulse">
+                        Habis
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
+        )}
+      </div>
+
+      {/* Bottom Bar: Status Informasi */}
+      <div className="bg-gray-900/80 rounded-2xl p-4 border border-gray-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-3 text-gray-400 flex-wrap">
+          <span className="flex items-center gap-1.5 font-bold text-amber-400">
+            <Clock className="w-4 h-4" /> Belum Dimasak: {waitingQueues.length}
+          </span>
+          <span className="text-gray-600">&bull;</span>
+          <span className="flex items-center gap-1.5 font-bold text-purple-400">
+            <ChefHat className="w-4 h-4" /> Sedang Dimasak: {inProgressQueues.length}
+          </span>
+          <span className="text-gray-600">&bull;</span>
+          <span className="flex items-center gap-1.5 font-bold text-emerald-400">
+            <BellRing className="w-4 h-4" /> Siap Diambil: {readyQueues.length}
+          </span>
         </div>
 
-        <span className="text-gray-500 text-[11px] hidden sm:block">
+        <span className="text-gray-500 text-[11px] font-medium">
           Sistem Antrean Kantin P3 &bull; Update Otomatis Tiap 4 Detik
         </span>
       </div>
