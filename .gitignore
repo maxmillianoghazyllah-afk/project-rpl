@@ -41,5 +41,6 @@ Thumbs.db
 # Temporary / Scratch Files
 scratch/
 doc_extracted.txt
+RPL_GITHUB/
 *.mp4
 demo/
