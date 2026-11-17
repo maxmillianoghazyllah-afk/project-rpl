@@ -18,12 +18,34 @@ export const SellerQueueDisplayPage: React.FC<SellerQueueDisplayPageProps> = ({
   const [time, setTime] = useState(new Date().toLocaleTimeString('id-ID'));
 
   useEffect(() => {
-    loadData();
-    const qInterval = setInterval(loadData, 4000);
+    // Bug Fix Issue #8: Cegah memory leak dan race condition polling saat component unmount
+    let isMounted = true;
+
+    const fetchSafe = async () => {
+      try {
+        const [queueData, menuData] = await Promise.all([
+          api.getQueue().catch(() => ({ queues: [] })),
+          api.getMenus().catch(() => []),
+        ]);
+        if (isMounted) {
+          setQueues(queueData.queues || []);
+          setMenus(menuData || []);
+        }
+      } catch (err) {
+        console.error('Error fetching display data', err);
+      }
+    };
+
+    fetchSafe();
+    const qInterval = setInterval(fetchSafe, 4000);
     const clockInterval = setInterval(() => {
-      setTime(new Date().toLocaleTimeString('id-ID'));
+      if (isMounted) {
+        setTime(new Date().toLocaleTimeString('id-ID'));
+      }
     }, 1000);
+
     return () => {
+      isMounted = false;
       clearInterval(qInterval);
       clearInterval(clockInterval);
     };

@@ -19,6 +19,7 @@ Aplikasi Sistem Antrean Kantin telah berhasil dikonfigurasi untuk berjalan secar
 | **Layar Monitor TV Kantin (Display Konter)** | `https://<ip>/kantin/seller/display` | Tampilan 3 Kolom Antrean (*Belum Dimasak*, *Sedang Disiapkan*, *Silakan Ambil*) |
 | **Health Check API Backend** | `https://<ip>/kantin/api/health` | Pengecekan status ketersediaan API server backend |
 | **Tautan Terowongan Online Cepat (Demo)** | `https://fair-mangos-study.loca.lt` | Akses publik langsung via Tunnel (Aktif & Terverifikasi) |
+| **Daftar 11 Issues GitHub (Post-Deployment)** | [GitHub Issues (100% Solved)](https://github.com/maxmillianoghazyllah-afk/project-rpl/issues?q=is%3Aissue) | Dokumentasi & penanganan 11 bugs pasca-deploy (Status: **ALL SOLVED**) |
 
 *(Ganti `<ip>` dengan IP VPS publik Anda seperti `103.175.xxx.xxx` atau IP Raspberry Pi lokal `192.168.x.x`).*
 

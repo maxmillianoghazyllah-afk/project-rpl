@@ -1,5 +1,24 @@
 import { Menu, Order, QueueResponse, UserRole } from '../types';
 
+// Bug Fix Issue #5: Sanitasi input untuk mencegah stored XSS dan manipulasi teks
+export function sanitizeInput(str: string, maxLen = 100): string {
+  if (!str) return '';
+  return str
+    .replace(/[<>]/g, '')
+    .trim()
+    .slice(0, maxLen);
+}
+
+// Bug Fix Issue #7: Pencegahan crash SyntaxError saat server mengembalikan HTML (502/504/404)
+async function safeJson(res: Response): Promise<any> {
+  const contentType = res.headers.get('content-type') || '';
+  if (contentType.includes('application/json')) {
+    return res.json();
+  }
+  const text = await res.text();
+  throw new Error(`Respons server bukan JSON (status ${res.status}): ${text.slice(0, 80)}`);
+}
+
 function getApiBase(): string {
   if (typeof window !== 'undefined') {
     const segments = window.location.pathname.split('/').filter(Boolean);
@@ -310,14 +329,20 @@ export const api = {
     items: { menuId: number; quantity: number; notes?: string }[],
     customerName?: string
   ): Promise<Order> {
+    const cleanCustomerName = sanitizeInput(customerName || '', 60);
+    const cleanItems = items.map((it) => ({
+      ...it,
+      notes: it.notes ? sanitizeInput(it.notes, 150) : undefined,
+    }));
+
     try {
       const res = await fetch(`${getApiBase()}/orders`, {
         method: 'POST',
         headers: getHeaders('CUSTOMER'),
-        body: JSON.stringify({ items, customerName }),
+        body: JSON.stringify({ items: cleanItems, customerName: cleanCustomerName }),
       });
       if (res.ok) {
-        const data = await res.json();
+        const data = await safeJson(res);
         const current = getLocalOrders();
         saveLocalOrders([data.order, ...current.filter((o) => o.id !== data.order.id)]);
         return data.order;
@@ -329,7 +354,7 @@ export const api = {
     // Seamless Local Fallback for Order Creation
     const menus = getLocalMenus();
     let total = 0;
-    const orderItems = items.map((it, idx) => {
+    const orderItems = cleanItems.map((it, idx) => {
       const m = menus.find((x) => x.id === it.menuId) || {
         id: it.menuId,
         name: 'Menu Pilihan',
@@ -347,13 +372,13 @@ export const api = {
         quantity: it.quantity,
         priceAtOrder: m.price,
         subtotal,
-        notes: it.notes?.trim() || undefined,
+        notes: it.notes || undefined,
       };
     });
 
     const orderId = Date.now();
     const orderNumber = `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
-    const effectiveName = customerName?.trim() || localStorage.getItem('kantin_customer_name') || 'Mahasiswa';
+    const effectiveName = cleanCustomerName || localStorage.getItem('kantin_customer_name') || 'Mahasiswa';
 
     const localOrder: Order = {
       id: orderId,

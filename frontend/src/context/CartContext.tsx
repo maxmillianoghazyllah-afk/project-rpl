@@ -29,9 +29,18 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [items]);
 
   const addToCart = (menu: Menu) => {
+    // Bug Fix Issue #6: Cegah penambahan item yang sedang habis (isAvailable = false)
+    if (!menu.isAvailable) {
+      alert(`Maaf, menu "${menu.name}" sedang habis.`);
+      return;
+    }
     setItems((prev) => {
       const existing = prev.find((item) => item.menu.id === menu.id);
       if (existing) {
+        if (existing.quantity >= 50) {
+          alert('Batas maksimum per item adalah 50 porsi');
+          return prev;
+        }
         return prev.map((item) =>
           item.menu.id === menu.id ? { ...item, quantity: item.quantity + 1 } : item
         );
@@ -50,6 +59,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .map((item) => {
           if (item.menu.id === menuId) {
             const newQty = item.quantity + delta;
+            if (newQty > 50) {
+              alert('Batas maksimum per item adalah 50 porsi');
+              return item;
+            }
             return newQty > 0 ? { ...item, quantity: newQty } : null;
           }
           return item;
@@ -59,8 +72,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateNotes = (menuId: number, notes: string) => {
+    // Bug Fix Issue #5: Batasi panjang catatan khusus maksimal 150 karakter
+    const sanitized = (notes || '').slice(0, 150);
     setItems((prev) =>
-      prev.map((item) => (item.menu.id === menuId ? { ...item, notes } : item))
+      prev.map((item) => (item.menu.id === menuId ? { ...item, notes: sanitized } : item))
     );
   };
 

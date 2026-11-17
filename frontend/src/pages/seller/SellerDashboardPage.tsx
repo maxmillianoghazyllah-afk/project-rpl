@@ -61,6 +61,8 @@ export const SellerDashboardPage: React.FC<SellerDashboardPageProps> = ({
   };
 
   const handleDecision = async (orderId: number, action: 'APPROVE' | 'REJECT') => {
+    // Bug Fix Issue #9: Mencegah duplicate approval / race condition double click
+    if (actionLoading !== null) return;
     try {
       setActionLoading(orderId);
       await api.decidePayment(orderId, action);

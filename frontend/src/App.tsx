@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Utensils } from 'lucide-react';
 import { CartProvider } from './context/CartContext';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
@@ -89,7 +90,28 @@ function getPathForTab(tab: string): string {
 export const App: React.FC = () => {
   const [activeRole, setActiveRole] = useState<UserRole>('CUSTOMER');
   const [currentTab, setCurrentTab] = useState<string>('menu');
-  const [activeOrder, setActiveOrder] = useState<Order | null>(null);
+  // Bug Fix Issue #4: Persistensi activeOrder ke sessionStorage agar tidak hilang saat refresh
+  const [activeOrder, setActiveOrder] = useState<Order | null>(() => {
+    try {
+      const saved = sessionStorage.getItem('kantin_active_order');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const updateActiveOrder = useCallback((order: Order | null) => {
+    setActiveOrder(order);
+    if (order) {
+      try {
+        sessionStorage.setItem('kantin_active_order', JSON.stringify(order));
+      } catch (e) {
+        console.error('Failed to persist active order', e);
+      }
+    } else {
+      sessionStorage.removeItem('kantin_active_order');
+    }
+  }, []);
 
   // Seller Auth Modal states
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -198,12 +220,12 @@ export const App: React.FC = () => {
   };
 
   const handleOrderCreated = (order: Order) => {
-    setActiveOrder(order);
+    updateActiveOrder(order);
     navigateToTab('payment', 'CUSTOMER');
   };
 
   const handlePaymentConfirmed = (order: Order) => {
-    setActiveOrder(order);
+    updateActiveOrder(order);
     navigateToTab('queue', 'CUSTOMER');
   };
 
@@ -237,12 +259,30 @@ export const App: React.FC = () => {
                   onOrderCreated={handleOrderCreated}
                 />
               )}
-              {currentTab === 'payment' && activeOrder && (
-                <PaymentInstructionPage
-                  order={activeOrder}
-                  onPaymentConfirmed={handlePaymentConfirmed}
-                  onNavigateToQueue={() => navigateToTab('queue', 'CUSTOMER')}
-                />
+              {currentTab === 'payment' && (
+                activeOrder ? (
+                  <PaymentInstructionPage
+                    order={activeOrder}
+                    onPaymentConfirmed={handlePaymentConfirmed}
+                    onNavigateToQueue={() => navigateToTab('queue', 'CUSTOMER')}
+                  />
+                ) : (
+                  <div className="max-w-2xl mx-auto px-4 py-16 text-center">
+                    <div className="w-16 h-16 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                      <Utensils className="w-8 h-8" />
+                    </div>
+                    <h2 className="text-xl font-bold text-gray-900 mb-2">Tidak Ada Tagihan Aktif</h2>
+                    <p className="text-xs sm:text-sm text-gray-500 mb-6 max-w-md mx-auto">
+                      Anda belum memiliki pesanan yang menunggu pembayaran. Silakan pilih menu dan buat pesanan terlebih dahulu.
+                    </p>
+                    <button
+                      onClick={() => navigateToTab('menu', 'CUSTOMER')}
+                      className="px-6 py-2.5 bg-brand-600 text-white font-bold text-xs sm:text-sm rounded-xl hover:bg-brand-700 transition shadow-sm"
+                    >
+                      Lihat Katalog Menu
+                    </button>
+                  </div>
+                )
               )}
               {currentTab === 'queue' && (
                 <QueueStatusPage
