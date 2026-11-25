@@ -18,7 +18,7 @@ export function isValidEmailFormat(email: string): boolean {
  */
 export function isValidPassword(password: string): boolean {
   if (!password || typeof password !== 'string') return false;
-  return password.length >= 6;
+  return password.trim().length >= 6;
 }
 
 /**

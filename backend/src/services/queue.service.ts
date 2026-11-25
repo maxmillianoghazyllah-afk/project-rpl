@@ -71,3 +71,60 @@ export function mapQueueStatusToOrderStatus(queueStatus: QueueStatus): OrderStat
       throw new Error(`Status antrean "${queueStatus}" tidak valid`);
   }
 }
+
+/**
+ * P11 Feature: Estimasi waktu tunggu antrean dapur secara dinamis (dalam menit).
+ * Menghitung beban antrean aktif (WAITING dan IN_PROGRESS).
+ */
+export function calculateEstimatedWaitTime(
+  waitingCount: number,
+  inProgressCount: number,
+  avgMinutesPerOrder: number = 4
+): { totalMinutes: number; displayText: string; isHighLoad: boolean } {
+  if (waitingCount < 0 || inProgressCount < 0 || avgMinutesPerOrder <= 0) {
+    throw new Error('Parameter estimasi antrean tidak valid');
+  }
+
+  // Tiap antrean sedang dimasak memiliki sisa separuh waktu (~2 menit), antrean waiting dikalikan waktu penuh
+  const totalMinutes = Math.ceil(waitingCount * avgMinutesPerOrder + inProgressCount * (avgMinutesPerOrder / 2));
+  const isHighLoad = totalMinutes > 20;
+
+  let displayText = 'Kurang dari 5 menit';
+  if (totalMinutes === 0) {
+    displayText = 'Siap dimasak segera';
+  } else if (totalMinutes <= 5) {
+    displayText = '~5 menit';
+  } else if (totalMinutes <= 20) {
+    displayText = `~${totalMinutes} menit`;
+  } else {
+    displayText = `~${totalMinutes} menit (Antrean Padat)`;
+  }
+
+  return { totalMinutes, displayText, isHighLoad };
+}
+
+/**
+ * P11 Feature: Penentuan prefiks kode konter berdasarkan kategori pesanan:
+ * - A: Makanan Berat
+ * - B: Minuman & Kopi
+ * - C: Camilan / Snack
+ */
+export function determineQueuePrefix(category?: string): string {
+  if (!category || typeof category !== 'string') return 'A';
+  const cat = category.trim().toLowerCase();
+  if (cat.includes('minum') || cat.includes('kopi') || cat.includes('jus')) {
+    return 'B';
+  }
+  if (cat.includes('camilan') || cat.includes('snack') || cat.includes('roti') || cat.includes('gorengan')) {
+    return 'C';
+  }
+  return 'A';
+}
+
+/**
+ * P11 Feature: Format nomor antrean multi-konter.
+ */
+export function formatMultiCounterQueue(category: string, sequence: number): string {
+  const prefix = determineQueuePrefix(category);
+  return formatQueueNumber(sequence, prefix);
+}

@@ -14,6 +14,8 @@ const SENSITIVE_KEYS = [
   'proofurl',
   'cardnumber',
   'cvv',
+  'pin',
+  'apikey',
 ];
 
 /**
