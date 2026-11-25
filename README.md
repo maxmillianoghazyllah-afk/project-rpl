@@ -9,8 +9,40 @@ Aplikasi web modern berbasis arsitektur client-server monorepo untuk mengelimina
 - **Frontend:** React 18, TypeScript, Vite, Tailwind CSS, Lucide Icons
 - **Backend API:** Node.js, Express.js, TypeScript
 - **ORM & Database:** Prisma ORM, MySQL (Disarankan via XAMPP port 3306)
-- **Pengujian (Testing):** Node.js Native Test Runner & Assertions (`npm test`)
-- **Status Pengujian:** ✅ **100% PASSED (Seluruh 6 Unit Test Files Lulus: 32 Assertions)**
+- **Pengujian (Testing):** Test Runner Mandiri 200 Unit Tests (`npm test` / `node scripts/ci-cd-pipeline.js`)
+- **Status Pengujian:** ✅ **100% PASSED (Seluruh 200/200 Unit Tests Lulus Sempurna)**
+- **Dokumentasi Arsitektur:** 📖 [ARSITEKTUR_KODE_DAN_FOLDER.md](file:///c:/Users/VIVOBOOK/Downloads/RPL/ARSITEKTUR_KODE_DAN_FOLDER.md)
+
+---
+
+## 🏗️ Arsitektur Kode & Struktur Folder (Sensible Architecture)
+
+Aplikasi dirancang dengan pendekatan **Separation of Concerns (SoC)** menggunakan pola **Decoupled Monorepo** dan **Multi-Tier Layered Architecture**:
+
+```text
+RPL/ (Root Monorepo)
+├── backend/               # Service Backend (Express, Node.js, Prisma ORM)
+│   ├── prisma/            # Skema basis data & database seeding
+│   ├── src/
+│   │   ├── controllers/   # Lapisan HTTP Request/Response Handler
+│   │   ├── services/      # Lapisan Domain & Pure Business Logic (Promo, Antrean, Order)
+│   │   ├── routes/        # Lapisan Pemetaan URL REST API
+│   │   ├── middleware/    # Autentikasi JWT & Role-Based Access Control (RBAC)
+│   │   ├── lib/           # Singleton Instance (Prisma Client Connection Pool)
+│   │   └── utils/         # Helper & Logger dengan Sensitive Data Masking
+│   └── tests/             # Suite 200 Unit Tests (Modular & Independen)
+├── frontend/              # Service Frontend (React, Vite, TypeScript, Tailwind)
+│   └── src/
+│       ├── components/    # Reusable & Atomic UI Components (Navbar, QRISCard, Footer)
+│       ├── context/       # Reactive Global State Management (CartContext)
+│       ├── pages/         # Tampilan Halaman (Menu, Cart, Queue, seller/)
+│       ├── services/      # Abstraksi Network / HTTP Client (api.ts)
+│       └── types/         # Kontrak Tipe Data TypeScript (DTO)
+├── scripts/               # Automasi DevOps & CI/CD Pipeline Otomatis
+└── nginx/                 # Konfigurasi Reverse Proxy & SSL Gateway
+```
+
+> 💡 *Penjelasan lengkap prinsip arsitektur, diagram alur, dan alasan pemilihan struktur folder dapat dibaca di berkas [ARSITEKTUR_KODE_DAN_FOLDER.md](file:///c:/Users/VIVOBOOK/Downloads/RPL/ARSITEKTUR_KODE_DAN_FOLDER.md).*
 
 ---
 
